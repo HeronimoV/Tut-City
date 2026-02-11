@@ -8,7 +8,7 @@
 - 🧠 **Step-by-step solver** — powered by Claude AI vision, reveals steps one at a time
 - 💬 **Follow-up chat** — ask questions about any step you don't understand
 - 💳 **Stripe subscriptions** — $34.99/month paywall
-- 🎟️ **Promo codes** — grant free access (e.g., `SISTER_VIP` for unlimited)
+- 🎟️ **Promo codes** — grant free access (e.g., `LARIZZA` for unlimited)
 - 🔐 **Auth** — Google sign-in or email/password via NextAuth.js
 
 ## Tech Stack
@@ -72,7 +72,7 @@ Open [http://localhost:3000](http://localhost:3000)
 
 | Code | Access |
 |---|---|
-| `SISTER_VIP` | Unlimited free access |
+| `LARIZZA` | Unlimited free access |
 | `GEOMETRY_ROCKS` | Free access (100 uses) |
 | `FREEMONTH` | Free access (50 uses) |
 

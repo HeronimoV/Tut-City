@@ -1,8 +1,8 @@
 {
   "codes": {
-    "SISTER_VIP": {
+    "LARIZZA": {
       "type": "unlimited",
-      "description": "Family VIP",
+      "description": "Family VIP - Larizza",
       "active": true,
       "uses": 0,
       "createdAt": "2026-02-11"
