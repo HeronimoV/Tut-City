@@ -137,7 +137,7 @@ export default function LandingPage() {
             </form>
           )}
           <p className="text-center text-white/50 text-xs mt-4">
-            Free trial included • $34.99/mo after • Cancel anytime
+            3 free solves • Then $34.99/mo • Cancel anytime
           </p>
         </div>
       </div>

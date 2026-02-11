@@ -17,11 +17,17 @@ export default function Dashboard() {
   }, [status, router]);
 
   useEffect(() => {
-    // Check if user has access (subscription or promo)
+    // Check if user has access (subscription, promo, or free trial remaining)
     const access = localStorage.getItem("tut_city_access");
-    if (access === "true") setHasAccess(true);
+    const solveCount = parseInt(localStorage.getItem("tut_city_solves") || "0", 10);
+    if (access === "true" || solveCount < 3) setHasAccess(true);
     setChecking(false);
   }, []);
+
+  const solveCount = typeof window !== "undefined" ? parseInt(localStorage.getItem("tut_city_solves") || "0", 10) : 0;
+  const isPaid = typeof window !== "undefined" ? localStorage.getItem("tut_city_access") === "true" : false;
+  const trialRemaining = Math.max(0, 3 - solveCount);
+  const onTrial = !isPaid && trialRemaining > 0;
 
   const grantAccess = () => {
     localStorage.setItem("tut_city_access", "true");
@@ -96,6 +102,16 @@ export default function Dashboard() {
             <div className="text-sm text-gray-500">with the WHY</div>
           </div>
         </div>
+
+        {/* Trial banner */}
+        {onTrial && (
+          <div className="mt-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center">
+            <p className="text-amber-700 text-sm font-semibold">
+              🎟️ Free Trial: {trialRemaining} solve{trialRemaining !== 1 ? "s" : ""} remaining
+            </p>
+            <p className="text-amber-600 text-xs mt-1">Subscribe for unlimited access!</p>
+          </div>
+        )}
 
         {/* Recent tip */}
         <div className="mt-6 bg-violet-50 border border-violet-100 rounded-2xl p-4">

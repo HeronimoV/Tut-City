@@ -35,6 +35,14 @@ export default function SolvePage() {
   }, [status, router]);
 
   const handleImageCapture = async (imageData: string) => {
+    // Check trial/access
+    const isPaid = localStorage.getItem("tut_city_access") === "true";
+    const solves = parseInt(localStorage.getItem("tut_city_solves") || "0", 10);
+    if (!isPaid && solves >= 3) {
+      setError("Free trial used up! Subscribe for unlimited access 🎟️");
+      return;
+    }
+
     setImage(imageData);
     setError(null);
     setSolving(true);
@@ -51,6 +59,11 @@ export default function SolvePage() {
       if (!res.ok) throw new Error("Failed to solve. Try again!");
       const data = await res.json();
       setResult(data);
+
+      // Increment solve count
+      if (!isPaid) {
+        localStorage.setItem("tut_city_solves", String(solves + 1));
+      }
     } catch (e: any) {
       setError(e.message || "Something went wrong");
     } finally {
