@@ -14,9 +14,25 @@ export default function CameraCapture({ onCapture }: Props) {
   const processFile = useCallback(
     (file: File) => {
       if (!file.type.startsWith("image/")) return;
+
+      // Compress image to max 1200px wide, JPEG quality 0.7 to stay under Vercel limits
+      const img = new Image();
       const reader = new FileReader();
       reader.onload = (e) => {
-        if (e.target?.result) onCapture(e.target.result as string);
+        if (!e.target?.result) return;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const maxWidth = 1200;
+          const scale = Math.min(1, maxWidth / img.width);
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const compressed = canvas.toDataURL("image/jpeg", 0.7);
+          onCapture(compressed);
+        };
+        img.src = e.target.result as string;
       };
       reader.readAsDataURL(file);
     },
