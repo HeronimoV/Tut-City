@@ -43,7 +43,6 @@ export default function StepWalkthrough({ result, onComplete }: Props) {
   const [showCheck, setShowCheck] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [checkResult, setCheckResult] = useState<"correct" | "wrong" | null>(null);
-  const [showReread, setShowReread] = useState(false);
   const [completedChecks, setCompletedChecks] = useState<Record<number, boolean>>({}); // stepIndex -> firstTryCorrect
   const [stepTimes, setStepTimes] = useState<Record<number, number>>({}); // stepIndex -> seconds spent
   const [stepStartTime, setStepStartTime] = useState<number>(Date.now());
@@ -64,7 +63,6 @@ export default function StepWalkthrough({ result, onComplete }: Props) {
       setShowCheck(false);
       setSelectedAnswer(null);
       setCheckResult(null);
-      setShowReread(false);
       setStepStartTime(Date.now());
     }
   }, [visibleSteps, result.steps]);
@@ -117,7 +115,6 @@ export default function StepWalkthrough({ result, onComplete }: Props) {
         ...prev,
         [visibleSteps - 1]: false,
       }));
-      setShowReread(true);
     }
   };
 
@@ -125,7 +122,6 @@ export default function StepWalkthrough({ result, onComplete }: Props) {
     setShowCheck(false);
     setSelectedAnswer(null);
     setCheckResult(null);
-    setShowReread(false);
     // Reset timer for re-reading
     const step = result.steps[visibleSteps - 1];
     const time = Math.max(5, Math.round(getReadTime(step) * 0.6));
@@ -260,7 +256,7 @@ export default function StepWalkthrough({ result, onComplete }: Props) {
       </div>
 
       {/* Comprehension check overlay */}
-      {showCheck && currentStep?.comprehensionCheck && !showReread && (
+      {showCheck && currentStep?.comprehensionCheck && (
         <div className="bg-white rounded-2xl p-5 card-shadow mb-4 border-2 border-violet-200 animate-slide-up">
           <h4 className="font-bold text-violet-700 text-sm mb-1">🧠 Quick Check!</h4>
           <p className="text-gray-700 text-sm mb-4">{currentStep.comprehensionCheck.question}</p>
