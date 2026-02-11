@@ -1,0 +1,29 @@
+{
+  "codes": {
+    "SISTER_VIP": {
+      "type": "unlimited",
+      "description": "Family VIP",
+      "active": true,
+      "uses": 0,
+      "createdAt": "2026-02-11"
+    },
+    "GEOMETRY_ROCKS": {
+      "type": "limited",
+      "maxUses": 100,
+      "uses": 0,
+      "active": true,
+      "expiresAt": null,
+      "description": "Launch promo",
+      "createdAt": "2026-02-11"
+    },
+    "FREEMONTH": {
+      "type": "limited",
+      "maxUses": 50,
+      "uses": 0,
+      "active": true,
+      "expiresAt": null,
+      "description": "Free month promo",
+      "createdAt": "2026-02-11"
+    }
+  }
+}

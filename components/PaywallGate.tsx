@@ -1,0 +1,66 @@
+"use client";
+
+import { useSession } from "next-auth/react";
+import { useState } from "react";
+
+interface Props {
+  onSubscribed: () => void;
+}
+
+export default function PaywallGate({ onSubscribed }: Props) {
+  const { data: session } = useSession();
+  const [loading, setLoading] = useState(false);
+
+  const handleSubscribe = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: session?.user?.email }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch {
+      alert("Something went wrong. Try again!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-3xl card-shadow p-6 text-center">
+      <div className="text-5xl mb-4">✨</div>
+      <h2 className="text-2xl font-extrabold text-gray-800 mb-2">Unlock Tut City</h2>
+      <p className="text-gray-500 mb-6">Unlimited geometry help, anytime</p>
+
+      <div className="bg-violet-50 rounded-2xl p-5 mb-6">
+        <div className="text-4xl font-extrabold gradient-text mb-1">$34.99</div>
+        <div className="text-gray-500 text-sm">per month</div>
+        <ul className="mt-4 space-y-2 text-left">
+          {[
+            "📸 Unlimited photo solves",
+            "🧠 Step-by-step explanations",
+            "💬 Follow-up chat on every problem",
+            "⚡ Fast responses powered by AI",
+          ].map((f, i) => (
+            <li key={i} className="text-gray-600 text-sm flex items-center gap-2">
+              <span>{f}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <button
+        onClick={handleSubscribe}
+        disabled={loading}
+        className="w-full gradient-bg text-white font-bold text-lg py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-[0.98] disabled:opacity-50"
+      >
+        {loading ? "Loading..." : "Subscribe Now 🚀"}
+      </button>
+      <p className="text-gray-400 text-xs mt-3">Cancel anytime • Secure payment via Stripe</p>
+    </div>
+  );
+}
