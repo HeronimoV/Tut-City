@@ -2,15 +2,40 @@
 
 import { useSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function LandingPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (session) router.push("/dashboard");
   }, [session, router]);
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
+
+    setLoading(false);
+
+    if (result?.error) {
+      setError("Invalid email or password 😕");
+    } else if (result?.ok) {
+      router.push("/dashboard");
+    }
+  };
 
   if (status === "loading") {
     return (
@@ -57,18 +82,60 @@ export default function LandingPage() {
 
         {/* CTA */}
         <div className="mt-auto space-y-3 pb-8">
-          <button
-            onClick={() => signIn("google")}
-            className="w-full bg-white text-violet-600 font-bold text-lg py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-[0.98]"
-          >
-            Continue with Google 🚀
-          </button>
-          <button
-            onClick={() => signIn("credentials")}
-            className="w-full bg-white/15 backdrop-blur-sm text-white font-semibold text-lg py-4 rounded-2xl border border-white/30 hover:bg-white/25 transition-all active:scale-[0.98]"
-          >
-            Sign in with Email ✉️
-          </button>
+          {!showEmailForm ? (
+            <>
+              {process.env.NEXT_PUBLIC_GOOGLE_ENABLED === "true" && (
+                <button
+                  onClick={() => signIn("google")}
+                  className="w-full bg-white text-violet-600 font-bold text-lg py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-[0.98]"
+                >
+                  Continue with Google 🚀
+                </button>
+              )}
+              <button
+                onClick={() => setShowEmailForm(true)}
+                className="w-full bg-white text-violet-600 font-bold text-lg py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-[0.98]"
+              >
+                Sign in with Email ✉️
+              </button>
+            </>
+          ) : (
+            <form onSubmit={handleEmailSignIn} className="space-y-3 animate-slide-up">
+              <input
+                type="email"
+                placeholder="Your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full px-5 py-4 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/30 text-white placeholder-white/50 text-lg focus:outline-none focus:ring-2 focus:ring-white/50"
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full px-5 py-4 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/30 text-white placeholder-white/50 text-lg focus:outline-none focus:ring-2 focus:ring-white/50"
+              />
+              {error && (
+                <p className="text-red-300 text-sm text-center">{error}</p>
+              )}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-white text-violet-600 font-bold text-lg py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-[0.98] disabled:opacity-50"
+              >
+                {loading ? "Signing in..." : "Let's go! 🚀"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowEmailForm(false); setError(""); }}
+                className="w-full text-white/60 text-sm py-2 hover:text-white/80 transition-all"
+              >
+                ← Back
+              </button>
+            </form>
+          )}
           <p className="text-center text-white/50 text-xs mt-4">
             Free trial included • $34.99/mo after • Cancel anytime
           </p>
