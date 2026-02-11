@@ -11,22 +11,23 @@ export default function Dashboard() {
   const router = useRouter();
   const [hasAccess, setHasAccess] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [trialRemaining, setTrialRemaining] = useState(3);
+  const [isPaid, setIsPaid] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/");
   }, [status, router]);
 
   useEffect(() => {
-    // Check if user has access (subscription, promo, or free trial remaining)
-    const access = localStorage.getItem("tut_city_access");
+    const access = localStorage.getItem("tut_city_access") === "true";
     const solveCount = parseInt(localStorage.getItem("tut_city_solves") || "0", 10);
-    if (access === "true" || solveCount < 3) setHasAccess(true);
+    const remaining = Math.max(0, 3 - solveCount);
+    setIsPaid(access);
+    setTrialRemaining(remaining);
+    if (access || remaining > 0) setHasAccess(true);
     setChecking(false);
   }, []);
 
-  const solveCount = typeof window !== "undefined" ? parseInt(localStorage.getItem("tut_city_solves") || "0", 10) : 0;
-  const isPaid = typeof window !== "undefined" ? localStorage.getItem("tut_city_access") === "true" : false;
-  const trialRemaining = Math.max(0, 3 - solveCount);
   const onTrial = !isPaid && trialRemaining > 0;
 
   const grantAccess = () => {
