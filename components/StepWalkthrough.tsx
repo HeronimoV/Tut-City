@@ -92,10 +92,12 @@ export default function StepWalkthrough({ result, onComplete }: Props) {
 
   const handleNextClick = () => {
     if (timerLeft > 0) return;
+    // If this step has a check that hasn't been done yet, show it
     if (hasCheck && checkResult === null) {
       setShowCheck(true);
       return;
     }
+    // If this step's check was passed (correct), or no check needed, proceed
     proceedToNext();
   };
 
@@ -133,6 +135,7 @@ export default function StepWalkthrough({ result, onComplete }: Props) {
   };
 
   const handleContinueAfterCorrect = () => {
+    setShowCheck(false);
     proceedToNext();
   };
 
@@ -311,34 +314,48 @@ export default function StepWalkthrough({ result, onComplete }: Props) {
         </div>
       )}
 
-      {/* Next Step button (hidden during active check) */}
-      {!showCheck && !allRevealed && (
-        <div>
-          <button
-            onClick={visibleSteps === 0 ? () => setVisibleSteps(1) : handleNextClick}
-            disabled={visibleSteps > 0 && timerLeft > 0}
-            className={`w-full font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-[0.98] text-lg relative overflow-hidden ${
-              visibleSteps > 0 && timerLeft > 0
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "gradient-bg text-white hover:shadow-xl"
-            }`}
-          >
-            {/* Timer progress bar */}
-            {visibleSteps > 0 && timerLeft > 0 && timerTotal > 0 && (
-              <div
-                className="absolute bottom-0 left-0 h-1 bg-violet-400 transition-all duration-1000 ease-linear"
-                style={{ width: `${((timerTotal - timerLeft) / timerTotal) * 100}%` }}
-              />
-            )}
-            {visibleSteps === 0
-              ? "Show Step 1 →"
-              : timerLeft > 0
-              ? `Read this step... (${timerLeft}s)`
-              : hasCheck && checkResult === null
-              ? "Answer Check to Continue 🧠"
-              : `Next Step (${visibleSteps + 1}/${result.steps.length}) →`}
-          </button>
-        </div>
+      {/* Next Step button — show when no check is active, OR when check was already passed */}
+      {visibleSteps === 0 && (
+        <button
+          onClick={() => setVisibleSteps(1)}
+          className="w-full font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-[0.98] text-lg gradient-bg text-white hover:shadow-xl"
+        >
+          Show Step 1 →
+        </button>
+      )}
+      {visibleSteps > 0 && !allRevealed && !showCheck && (
+        <button
+          onClick={handleNextClick}
+          disabled={timerLeft > 0}
+          className={`w-full font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-[0.98] text-lg relative overflow-hidden ${
+            timerLeft > 0
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "gradient-bg text-white hover:shadow-xl"
+          }`}
+        >
+          {timerLeft > 0 && timerTotal > 0 && (
+            <div
+              className="absolute bottom-0 left-0 h-1 bg-violet-400 transition-all duration-1000 ease-linear"
+              style={{ width: `${((timerTotal - timerLeft) / timerTotal) * 100}%` }}
+            />
+          )}
+          {timerLeft > 0
+            ? `Read this step... (${timerLeft}s)`
+            : hasCheck && checkResult === null
+            ? "Answer Check to Continue 🧠"
+            : visibleSteps < result.steps.length
+            ? `Next Step (${visibleSteps + 1}/${result.steps.length}) →`
+            : "See My Results! 🎉"}
+        </button>
+      )}
+      {/* When all steps revealed but not done yet (last step had no check or check already passed) */}
+      {allRevealed && !allDone && !showCheck && (
+        <button
+          onClick={() => { recordStepTime(); setAllDone(true); }}
+          className="w-full font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-[0.98] text-lg gradient-bg text-white hover:shadow-xl"
+        >
+          See My Results! 🎉
+        </button>
       )}
 
       {/* Progress dots */}
