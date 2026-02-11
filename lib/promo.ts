@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 
 const DATA_PATH = path.join(process.cwd(), "data", "promo-codes.json");
+const TMP_PATH = "/tmp/promo-codes.json";
 
 export interface PromoCode {
   type: "unlimited" | "limited" | "single-use" | "expiring";
@@ -19,6 +20,11 @@ interface PromoData {
 
 function readData(): PromoData {
   try {
+    // Try /tmp first (writable on Vercel), fall back to bundled data
+    if (fs.existsSync(TMP_PATH)) {
+      const raw = fs.readFileSync(TMP_PATH, "utf-8");
+      return JSON.parse(raw);
+    }
     const raw = fs.readFileSync(DATA_PATH, "utf-8");
     return JSON.parse(raw);
   } catch {
@@ -27,14 +33,32 @@ function readData(): PromoData {
 }
 
 function writeData(data: PromoData): void {
-  fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2), "utf-8");
+  try {
+    // Write to /tmp on Vercel (writable), also try data dir for local dev
+    fs.writeFileSync(TMP_PATH, JSON.stringify(data, null, 2), "utf-8");
+  } catch {}
+  try {
+    fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2), "utf-8");
+  } catch {}
+}
+
+// Initialize /tmp from bundled data if not present
+function ensureTmpData(): void {
+  if (!fs.existsSync(TMP_PATH)) {
+    try {
+      const raw = fs.readFileSync(DATA_PATH, "utf-8");
+      fs.writeFileSync(TMP_PATH, raw, "utf-8");
+    } catch {}
+  }
 }
 
 export function getAllPromoCodes(): Record<string, PromoCode> {
+  ensureTmpData();
   return readData().codes;
 }
 
 export function getPromoCode(code: string): PromoCode | undefined {
+  ensureTmpData();
   return readData().codes[code.toUpperCase().trim()];
 }
 
@@ -42,6 +66,7 @@ export function createPromoCode(
   code: string,
   promo: Omit<PromoCode, "uses" | "createdAt" | "active"> & { active?: boolean }
 ): PromoCode {
+  ensureTmpData();
   const data = readData();
   const upper = code.toUpperCase().trim();
   if (data.codes[upper]) throw new Error("Code already exists");
@@ -60,6 +85,7 @@ export function updatePromoCode(
   code: string,
   updates: Partial<Pick<PromoCode, "active" | "maxUses" | "expiresAt" | "description">>
 ): PromoCode {
+  ensureTmpData();
   const data = readData();
   const upper = code.toUpperCase().trim();
   if (!data.codes[upper]) throw new Error("Code not found");
@@ -73,6 +99,7 @@ export function deactivatePromoCode(code: string): void {
 }
 
 export function validatePromoCode(code: string): { valid: boolean; message: string } {
+  ensureTmpData();
   const upper = code.toUpperCase().trim();
   const data = readData();
   const promo = data.codes[upper];
