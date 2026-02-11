@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
-    "@auth/core": "^0.37.2",
     "next": "14.2.21",
     "next-auth": "^4.24.11",
     "react": "^18.3.1",
