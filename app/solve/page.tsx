@@ -32,23 +32,29 @@ export default function SolvePage() {
   const [result, setResult] = useState<SolveResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showChat, setShowChat] = useState(false);
+  const [solveStartTime, setSolveStartTime] = useState<number>(0);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/");
   }, [status, router]);
 
   const handleImageCapture = async (imageData: string) => {
-    // Check trial/access
-    const isPaid = localStorage.getItem("tut_city_access") === "true";
-    const solves = parseInt(localStorage.getItem("tut_city_solves") || "0", 10);
-    if (!isPaid && solves >= 3) {
-      setError("Free trial used up! Subscribe for unlimited access 🎟️");
-      return;
+    // Check trial/access via API
+    try {
+      const accessRes = await fetch("/api/access");
+      const accessData = await accessRes.json();
+      if (!accessData.hasAccess) {
+        setError("Free trial used up! Subscribe for unlimited access 🎟️");
+        return;
+      }
+    } catch {
+      // If API fails, allow (graceful degradation)
     }
 
     setImage(imageData);
     setError(null);
     setSolving(true);
+    setSolveStartTime(Date.now());
     setResult(null);
     setShowChat(false);
 
@@ -62,15 +68,34 @@ export default function SolvePage() {
       if (!res.ok) throw new Error("Failed to solve. Try again!");
       const data = await res.json();
       setResult(data);
-
-      // Increment solve count
-      if (!isPaid) {
-        localStorage.setItem("tut_city_solves", String(solves + 1));
-      }
     } catch (e: any) {
       setError(e.message || "Something went wrong");
     } finally {
       setSolving(false);
+    }
+  };
+
+  const handleSolveComplete = async (score: number, comprehensionResults: Record<string, boolean>, stepTimes: Record<string, number>) => {
+    setShowChat(true);
+    if (!result) return;
+    const timeSpent = Math.round((Date.now() - solveStartTime) / 1000);
+    try {
+      await fetch("/api/solves", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: result.subjectName || result.subject || "General",
+          problem_description: result.problem,
+          answer: result.answer,
+          concept: result.concept,
+          steps: result.steps,
+          understanding_score: score,
+          comprehension_results: comprehensionResults,
+          time_spent_seconds: timeSpent,
+        }),
+      });
+    } catch {
+      // Non-blocking — don't disrupt UX if save fails
     }
   };
 
@@ -84,11 +109,16 @@ export default function SolvePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top bar */}
-      <div className="gradient-bg px-4 py-3 flex items-center gap-3">
-        <button onClick={() => router.push("/dashboard")} className="text-white text-2xl">
-          ←
+      <div className="gradient-bg px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button onClick={() => router.push("/dashboard")} className="text-white text-2xl">
+            ←
+          </button>
+          <h1 className="text-white font-bold text-lg">Solve a Problem</h1>
+        </div>
+        <button onClick={() => router.push("/progress")} className="text-white/80 text-sm hover:text-white transition">
+          📊 Progress
         </button>
-        <h1 className="text-white font-bold text-lg">Solve a Problem</h1>
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-6">
@@ -138,7 +168,7 @@ export default function SolvePage() {
                 <img src={image} alt="Problem" className="w-full max-h-48 object-cover" />
               </div>
             )}
-            <StepWalkthrough result={result} onComplete={() => setShowChat(true)} />
+            <StepWalkthrough result={result} onComplete={handleSolveComplete} />
             <button
               onClick={handleReset}
               className="w-full mt-4 py-3 text-violet-500 font-semibold text-sm hover:text-violet-700 transition"

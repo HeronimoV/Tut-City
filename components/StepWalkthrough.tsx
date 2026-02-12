@@ -26,7 +26,7 @@ interface SolveResult {
 
 interface Props {
   result: SolveResult;
-  onComplete: () => void;
+  onComplete: (score: number, comprehensionResults: Record<string, boolean>, stepTimes: Record<string, number>) => void;
 }
 
 function getReadTime(step: Step): number {
@@ -189,7 +189,7 @@ export default function StepWalkthrough({ result, onComplete }: Props) {
         </div>
 
         <button
-          onClick={onComplete}
+          onClick={() => onComplete(score, completedChecks, stepTimes)}
           className="w-full bg-violet-100 text-violet-700 font-bold py-4 rounded-2xl hover:bg-violet-200 transition-all active:scale-[0.98]"
         >
           💬 Have questions? Let&apos;s chat about it!

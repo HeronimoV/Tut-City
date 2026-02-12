@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { getProfile, createProfile } from "@/lib/db";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -15,8 +16,6 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // Demo: accept any email/password for now
-        // In production, verify against a database
         if (credentials?.email && credentials?.password) {
           return {
             id: credentials.email,
@@ -42,6 +41,18 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) (session.user as any).id = token.id;
       return session;
+    },
+    async signIn({ user }) {
+      // Create profile in Supabase on first login
+      try {
+        const existing = await getProfile(user.id);
+        if (!existing) {
+          await createProfile(user.id, user.email || "", user.name || "");
+        }
+      } catch {
+        // Non-blocking — don't prevent sign-in if Supabase is down
+      }
+      return true;
     },
   },
 };

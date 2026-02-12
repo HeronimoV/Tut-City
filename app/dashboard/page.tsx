@@ -13,26 +13,35 @@ export default function Dashboard() {
   const [checking, setChecking] = useState(true);
   const [trialRemaining, setTrialRemaining] = useState(3);
   const [isPaid, setIsPaid] = useState(false);
+  const [totalSolves, setTotalSolves] = useState(0);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/");
   }, [status, router]);
 
   useEffect(() => {
-    const access = localStorage.getItem("tut_city_access") === "true";
-    const solveCount = parseInt(localStorage.getItem("tut_city_solves") || "0", 10);
-    const remaining = Math.max(0, 3 - solveCount);
-    setIsPaid(access);
-    setTrialRemaining(remaining);
-    if (access || remaining > 0) setHasAccess(true);
-    setChecking(false);
-  }, []);
+    if (status !== "authenticated") return;
+    fetch("/api/access")
+      .then((r) => r.json())
+      .then((data) => {
+        setIsPaid(data.reason === "paid");
+        setTrialRemaining(data.trialRemaining ?? 0);
+        setHasAccess(data.hasAccess ?? false);
+        setTotalSolves(data.totalSolves ?? 0);
+        setChecking(false);
+      })
+      .catch(() => {
+        // Fallback: grant access on API failure
+        setHasAccess(true);
+        setChecking(false);
+      });
+  }, [status]);
 
   const onTrial = !isPaid && trialRemaining > 0;
 
   const grantAccess = () => {
-    localStorage.setItem("tut_city_access", "true");
     setHasAccess(true);
+    setIsPaid(true);
   };
 
   if (status === "loading" || checking) {
@@ -65,12 +74,20 @@ export default function Dashboard() {
       {/* Top bar */}
       <div className="gradient-bg px-4 py-4 flex items-center justify-between">
         <h1 className="text-white font-bold text-xl">Tut City 🏙️</h1>
-        <button
-          onClick={() => signOut()}
-          className="text-white/70 text-sm hover:text-white transition"
-        >
-          Sign out
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push("/progress")}
+            className="text-white/80 text-sm hover:text-white transition"
+          >
+            📊 Progress
+          </button>
+          <button
+            onClick={() => signOut()}
+            className="text-white/70 text-sm hover:text-white transition"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-8">
@@ -81,6 +98,18 @@ export default function Dashboard() {
           </h2>
           <p className="text-gray-500 mt-1">Ready to crush some geometry?</p>
         </div>
+
+        {/* Mini stats */}
+        {totalSolves > 0 && (
+          <button
+            onClick={() => router.push("/progress")}
+            className="w-full bg-violet-50 border border-violet-100 rounded-2xl p-3 mb-4 text-center hover:bg-violet-100 transition"
+          >
+            <span className="text-violet-700 text-sm font-semibold">
+              📊 {totalSolves} problem{totalSolves !== 1 ? "s" : ""} solved — View Progress →
+            </span>
+          </button>
+        )}
 
         {/* Main action */}
         <button
