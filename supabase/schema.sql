@@ -1,6 +1,6 @@
--- Users table (extends auth.users)
+-- Users table
 CREATE TABLE public.profiles (
-  id UUID REFERENCES auth.users(id) PRIMARY KEY,
+  id TEXT PRIMARY KEY,
   email TEXT,
   display_name TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -15,7 +15,7 @@ CREATE TABLE public.profiles (
 -- Solve history
 CREATE TABLE public.solves (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.profiles(id),
+  user_id TEXT REFERENCES public.profiles(id),
   subject TEXT NOT NULL,
   problem_description TEXT,
   answer TEXT,
@@ -30,7 +30,7 @@ CREATE TABLE public.solves (
 -- Per-concept tracking
 CREATE TABLE public.concept_scores (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.profiles(id),
+  user_id TEXT REFERENCES public.profiles(id),
   subject TEXT NOT NULL,
   concept TEXT NOT NULL,
   attempts INT DEFAULT 0,
@@ -43,7 +43,7 @@ CREATE TABLE public.concept_scores (
 -- Weaknesses (auto-calculated)
 CREATE TABLE public.user_weaknesses (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.profiles(id),
+  user_id TEXT REFERENCES public.profiles(id),
   subject TEXT NOT NULL,
   concept TEXT NOT NULL,
   weakness_score FLOAT,
