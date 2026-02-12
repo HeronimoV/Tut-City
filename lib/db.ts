@@ -250,7 +250,7 @@ export async function validateAndApplyPromo(userId: string, code: string) {
     .eq("code", upper)
     .single();
 
-  if (error || !promo) return { valid: false, message: "Invalid promo code 😕" };
+  if (error || !promo) return { valid: false, message: "That's not a Tut City promo code 😕 If you have a discount code, you'll enter it at checkout when subscribing!" };
   if (!promo.active) return { valid: false, message: "This code is no longer active 😢" };
   if (promo.expires_at && new Date(promo.expires_at) < new Date())
     return { valid: false, message: "This code has expired 😢" };
