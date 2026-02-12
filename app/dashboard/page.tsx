@@ -93,6 +93,9 @@ export default function Dashboard() {
         {/* Subjects */}
         <div className="grid grid-cols-3 gap-3">
           {[
+            { emoji: "➕", name: "Arithmetic" },
+            { emoji: "🍕", name: "Fractions" },
+            { emoji: "🎒", name: "Elementary" },
             { emoji: "📐", name: "Geometry" },
             { emoji: "🔢", name: "Algebra" },
             { emoji: "📊", name: "Trig" },

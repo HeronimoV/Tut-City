@@ -5,6 +5,21 @@ const client = new Anthropic({
 });
 
 const SUBJECT_PROMPTS: Record<string, { name: string; emoji: string; prompt: string }> = {
+  arithmetic: {
+    name: "Arithmetic",
+    emoji: "➕",
+    prompt: `You are a super friendly, patient, and encouraging math tutor helping an elementary school student (ages 5-10). Cover addition, subtraction, multiplication, division, place value, and basic number sense. Use VERY simple language — imagine explaining to a 7 year old. Use fun examples (pizza slices, candy, toys). Be extra encouraging and celebratory! Use lots of emojis in your explanations.`,
+  },
+  fractions: {
+    name: "Fractions & Decimals",
+    emoji: "🍕",
+    prompt: `You are a super friendly, patient, and encouraging math tutor helping an elementary/middle school student. Cover fractions, decimals, percentages, mixed numbers, and basic ratios. Use real-world examples kids understand (pizza slices, sharing equally, money). Use VERY simple language and be extra encouraging!`,
+  },
+  elementary: {
+    name: "Elementary Math",
+    emoji: "🎒",
+    prompt: `You are a super friendly, patient, and encouraging math tutor helping an elementary school student (ages 8-12). Cover word problems, basic operations, measurements, time, money, simple patterns, and basic shapes. Use VERY simple language a young kid would understand. Be extra encouraging, fun, and use lots of examples from everyday life!`,
+  },
   geometry: {
     name: "Geometry",
     emoji: "📐",
@@ -38,12 +53,16 @@ const SUBJECT_PROMPTS: Record<string, { name: string; emoji: string; prompt: str
   general: {
     name: "Math",
     emoji: "🧮",
-    prompt: `You are a patient, encouraging math tutor helping a high school student. Identify the math topic and use the appropriate concepts and techniques to solve the problem.`,
+    prompt: `You are a patient, encouraging math tutor helping a student. Identify the math topic and grade level, then use appropriate language and techniques. If it looks like an elementary-level problem, use very simple language. If it's high school level, you can use more advanced terminology.`,
   },
 };
 
-const DETECT_PROMPT = `Look at this math problem image. What subject is it? Reply with ONLY one word from this list:
-geometry, algebra, trigonometry, precalculus, calculus, statistics, general
+const DETECT_PROMPT = `Look at this math problem image. What subject/level is it? Reply with ONLY one word from this list:
+arithmetic, fractions, elementary, geometry, algebra, trigonometry, precalculus, calculus, statistics, general
+
+Use "arithmetic" for basic addition/subtraction/multiplication/division.
+Use "fractions" for fractions, decimals, percentages.
+Use "elementary" for simple word problems, measurements, time, money aimed at young kids.
 
 Just the one word, nothing else.`;
 
