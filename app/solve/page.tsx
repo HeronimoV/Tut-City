@@ -19,6 +19,9 @@ interface SolveResult {
   steps: { step: number; action: string; why: string; result: string; comprehensionCheck?: ComprehensionCheck | null }[];
   answer: string;
   concept: string;
+  subject?: string;
+  subjectName?: string;
+  subjectEmoji?: string;
 }
 
 export default function SolvePage() {
@@ -122,6 +125,14 @@ export default function SolvePage() {
 
         {result && !showChat && (
           <div>
+            {result.subjectEmoji && result.subjectName && (
+              <div className="flex justify-center mb-4">
+                <div className="bg-violet-50 rounded-full px-4 py-2 inline-flex items-center gap-2">
+                  <span>{result.subjectEmoji}</span>
+                  <span className="text-violet-700 text-sm font-semibold">{result.subjectName} Tutor</span>
+                </div>
+              </div>
+            )}
             {image && (
               <div className="mb-4 rounded-2xl overflow-hidden">
                 <img src={image} alt="Problem" className="w-full max-h-48 object-cover" />

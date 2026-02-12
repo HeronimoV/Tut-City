@@ -4,17 +4,65 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-const GEOMETRY_SYSTEM_PROMPT = `You are a patient, encouraging geometry tutor helping a high school student. When given a photo of a geometry problem:
+const SUBJECT_PROMPTS: Record<string, { name: string; emoji: string; prompt: string }> = {
+  geometry: {
+    name: "Geometry",
+    emoji: "📐",
+    prompt: `You are a patient, encouraging geometry tutor helping a high school student. Reference geometry theorems, postulates, and properties (Triangle Angle Sum, Pythagorean Theorem, parallel line theorems, circle theorems, etc). Use diagrams descriptions when helpful.`,
+  },
+  algebra: {
+    name: "Algebra",
+    emoji: "🔢",
+    prompt: `You are a patient, encouraging algebra tutor helping a high school student. Reference algebraic properties, rules, and techniques (distributive property, combining like terms, factoring, quadratic formula, systems of equations, etc). Show each algebraic manipulation clearly.`,
+  },
+  trigonometry: {
+    name: "Trigonometry",
+    emoji: "📊",
+    prompt: `You are a patient, encouraging trigonometry tutor helping a high school student. Reference trig identities, unit circle values, SOH-CAH-TOA, law of sines, law of cosines, etc. Explain angle relationships clearly.`,
+  },
+  precalculus: {
+    name: "Pre-Calculus",
+    emoji: "📈",
+    prompt: `You are a patient, encouraging pre-calculus tutor helping a high school student. Cover functions, limits intro, polynomial behavior, rational functions, logarithms, exponentials, sequences and series. Bridge the gap between algebra/trig and calculus.`,
+  },
+  calculus: {
+    name: "Calculus",
+    emoji: "∫",
+    prompt: `You are a patient, encouraging calculus tutor helping a high school student. Cover derivatives, integrals, limits, chain rule, product rule, u-substitution, etc. Explain the intuition behind each concept, not just the mechanics.`,
+  },
+  statistics: {
+    name: "Statistics",
+    emoji: "📉",
+    prompt: `You are a patient, encouraging statistics tutor helping a high school student. Cover probability, distributions, hypothesis testing, mean/median/mode, standard deviation, z-scores, regression, etc. Use real-world examples to make concepts click.`,
+  },
+  general: {
+    name: "Math",
+    emoji: "🧮",
+    prompt: `You are a patient, encouraging math tutor helping a high school student. Identify the math topic and use the appropriate concepts and techniques to solve the problem.`,
+  },
+};
+
+const DETECT_PROMPT = `Look at this math problem image. What subject is it? Reply with ONLY one word from this list:
+geometry, algebra, trigonometry, precalculus, calculus, statistics, general
+
+Just the one word, nothing else.`;
+
+function buildSolvePrompt(subject: string): string {
+  const tutor = SUBJECT_PROMPTS[subject] || SUBJECT_PROMPTS.general;
+  return `${tutor.prompt}
+
+When given a photo of a math problem:
 1. First, identify what the problem is asking
 2. List what information is given
 3. Break the solution into clear, numbered steps
 4. For EACH step, explain WHY you're doing it (reference the theorem, property, or rule)
-5. Use simple language a 9th grader would understand
+5. Use simple language a high schooler would understand
 6. Be encouraging!
-7. For every 2nd or 3rd step, include a comprehension check question — a multiple choice question testing understanding of that step. Make it encouraging, not punishing. The question should test whether the student understood the key concept or reasoning used in that step.
+7. For every 2nd or 3rd step, include a comprehension check question — a multiple choice question testing understanding of that step
 
 Return your response as JSON only (no markdown, no code fences):
 {
+  "subject": "${subject}",
   "problem": "description of what the problem is asking",
   "given": ["list", "of", "givens"],
   "steps": [
@@ -38,35 +86,67 @@ Return your response as JSON only (no markdown, no code fences):
     }
   ],
   "answer": "final answer",
-  "concept": "key geometry concept used"
+  "concept": "key ${tutor.name} concept used"
 }
 
 IMPORTANT: Include comprehensionCheck on approximately every 2nd or 3rd step (not every step). Set comprehensionCheck to null for steps without a check. Make questions test understanding of the reasoning, not just recall. Always provide exactly 4 options with one correct answer.`;
+}
 
-export async function solveGeometryProblem(imageBase64: string): Promise<any> {
-  // Strip data URL prefix if present
+async function detectSubject(imageBase64: string): Promise<string> {
   const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
   const mediaType = imageBase64.startsWith("data:image/png") ? "image/png" : "image/jpeg";
 
+  try {
+    const response = await client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 20,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: { type: "base64", media_type: mediaType, data: base64Data },
+            },
+            { type: "text", text: DETECT_PROMPT },
+          ],
+        },
+      ],
+    });
+
+    const text = (response.content[0].type === "text" ? response.content[0].text : "").toLowerCase().trim();
+    const subjects = Object.keys(SUBJECT_PROMPTS);
+    const detected = subjects.find((s) => text.includes(s));
+    return detected || "general";
+  } catch {
+    return "general";
+  }
+}
+
+export async function solveMathProblem(imageBase64: string): Promise<any> {
+  const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+  const mediaType = imageBase64.startsWith("data:image/png") ? "image/png" : "image/jpeg";
+
+  // Step 1: Detect subject
+  const subject = await detectSubject(imageBase64);
+  const tutor = SUBJECT_PROMPTS[subject] || SUBJECT_PROMPTS.general;
+
+  // Step 2: Solve with subject-specific prompt
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: 4096,
-    system: GEOMETRY_SYSTEM_PROMPT,
+    system: buildSolvePrompt(subject),
     messages: [
       {
         role: "user",
         content: [
           {
             type: "image",
-            source: {
-              type: "base64",
-              media_type: mediaType,
-              data: base64Data,
-            },
+            source: { type: "base64", media_type: mediaType, data: base64Data },
           },
           {
             type: "text",
-            text: "Please solve this geometry problem step by step. Include comprehension check questions on every 2nd-3rd step. Return JSON only.",
+            text: "Please solve this math problem step by step. Include comprehension check questions on every 2nd-3rd step. Return JSON only.",
           },
         ],
       },
@@ -74,18 +154,29 @@ export async function solveGeometryProblem(imageBase64: string): Promise<any> {
   });
 
   const text = response.content[0].type === "text" ? response.content[0].text : "";
-  // Try to parse JSON from the response
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error("Could not parse solution");
-  return JSON.parse(jsonMatch[0]);
+
+  const result = JSON.parse(jsonMatch[0]);
+  // Ensure subject info is included
+  result.subject = subject;
+  result.subjectName = tutor.name;
+  result.subjectEmoji = tutor.emoji;
+  return result;
 }
+
+// Keep backward compat
+export const solveGeometryProblem = solveMathProblem;
 
 export async function chatAboutProblem(
   problem: any,
   question: string,
   history: { role: string; content: string }[]
 ): Promise<string> {
-  const systemPrompt = `You are a patient, encouraging geometry tutor. The student just solved this problem:
+  const subject = problem.subject || "geometry";
+  const tutor = SUBJECT_PROMPTS[subject] || SUBJECT_PROMPTS.general;
+
+  const systemPrompt = `You are a patient, encouraging ${tutor.name} tutor. The student just solved this problem:
 Problem: ${problem.problem}
 Answer: ${problem.answer}
 Concept: ${problem.concept}
@@ -108,4 +199,12 @@ They're asking a follow-up question. Be helpful, use simple language, and refere
   });
 
   return response.content[0].type === "text" ? response.content[0].text : "";
+}
+
+export function getSubjects() {
+  return Object.entries(SUBJECT_PROMPTS).map(([key, val]) => ({
+    id: key,
+    name: val.name,
+    emoji: val.emoji,
+  }));
 }

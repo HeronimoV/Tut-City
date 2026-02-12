@@ -90,18 +90,21 @@ export default function Dashboard() {
           📸 Solve a Problem
         </button>
 
-        {/* Stats / info cards */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white rounded-2xl p-4 card-shadow text-center">
-            <div className="text-3xl mb-1">📐</div>
-            <div className="text-sm text-gray-500">Triangles, circles,</div>
-            <div className="text-sm text-gray-500">proofs & more</div>
-          </div>
-          <div className="bg-white rounded-2xl p-4 card-shadow text-center">
-            <div className="text-3xl mb-1">💡</div>
-            <div className="text-sm text-gray-500">Step-by-step</div>
-            <div className="text-sm text-gray-500">with the WHY</div>
-          </div>
+        {/* Subjects */}
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { emoji: "📐", name: "Geometry" },
+            { emoji: "🔢", name: "Algebra" },
+            { emoji: "📊", name: "Trig" },
+            { emoji: "📈", name: "Pre-Calc" },
+            { emoji: "∫", name: "Calculus" },
+            { emoji: "📉", name: "Statistics" },
+          ].map((s, i) => (
+            <div key={i} className="bg-white rounded-2xl p-3 card-shadow text-center">
+              <div className="text-2xl mb-1">{s.emoji}</div>
+              <div className="text-xs text-gray-500 font-medium">{s.name}</div>
+            </div>
+          ))}
         </div>
 
         {/* Trial banner */}

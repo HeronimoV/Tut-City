@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { solveGeometryProblem } from "@/lib/anthropic";
+import { solveMathProblem } from "@/lib/anthropic";
 
 export const maxDuration = 30; // Allow up to 30s for Claude to respond
 
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = await solveGeometryProblem(image);
+    const result = await solveMathProblem(image);
     return NextResponse.json(result);
   } catch (error: any) {
     console.error("Solve error:", error?.message, error?.status);

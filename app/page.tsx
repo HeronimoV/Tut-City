@@ -55,16 +55,16 @@ export default function LandingPage() {
             Tut City
           </h1>
           <p className="text-xl text-white/80 font-medium">
-            Your geometry BFF ✨
+            Your math BFF ✨
           </p>
         </div>
 
         {/* Features */}
         <div className="space-y-4 mb-10">
           {[
-            { emoji: "📸", title: "Snap a pic", desc: "Take a photo of any geometry problem" },
+            { emoji: "📸", title: "Snap a pic", desc: "Take a photo of any math problem" },
             { emoji: "🧠", title: "Step-by-step", desc: "Get clear explanations for every step" },
-            { emoji: "💬", title: "Ask follow-ups", desc: "Chat about anything you don't get" },
+            { emoji: "📐", title: "All subjects", desc: "Geometry, Algebra, Trig, Calc & more" },
           ].map((f, i) => (
             <div
               key={i}
