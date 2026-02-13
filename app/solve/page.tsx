@@ -33,6 +33,7 @@ export default function SolvePage() {
   const [error, setError] = useState<string | null>(null);
   const [showChat, setShowChat] = useState(false);
   const [solveStartTime, setSolveStartTime] = useState<number>(0);
+  const [teachingMethod, setTeachingMethod] = useState<string>("auto");
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/");
@@ -62,7 +63,7 @@ export default function SolvePage() {
       const res = await fetch("/api/solve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: imageData }),
+        body: JSON.stringify({ image: imageData, teachingMethod }),
       });
 
       if (!res.ok) throw new Error("Failed to solve. Try again!");
@@ -122,7 +123,37 @@ export default function SolvePage() {
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-6">
-        {!image && !result && <CameraCapture onCapture={handleImageCapture} />}
+        {!image && !result && (
+          <>
+            {/* Teaching Method Selector */}
+            <div className="mb-5">
+              <h3 className="text-sm font-semibold text-gray-500 mb-2 text-center">Teaching Method</h3>
+              <div className="flex gap-2">
+                {[
+                  { id: "auto", label: "Auto", desc: "Let AI decide" },
+                  { id: "common-core", label: "Common Core", desc: "Standards-based" },
+                  { id: "singapore", label: "Singapore", desc: "Visual & models" },
+                ].map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => setTeachingMethod(m.id)}
+                    className={`flex-1 p-3 rounded-xl text-center transition-all ${
+                      teachingMethod === m.id
+                        ? "bg-violet-100 border-2 border-violet-400 shadow-sm"
+                        : "bg-white border border-gray-200 hover:border-violet-300"
+                    }`}
+                  >
+                    <div className={`text-sm font-bold ${teachingMethod === m.id ? "text-violet-700" : "text-gray-700"}`}>
+                      {m.label}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-0.5">{m.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <CameraCapture onCapture={handleImageCapture} />
+          </>
+        )}
 
         {solving && (
           <div className="text-center py-16">

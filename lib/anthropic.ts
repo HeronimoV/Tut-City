@@ -66,9 +66,29 @@ Use "elementary" for simple word problems, measurements, time, money aimed at yo
 
 Just the one word, nothing else.`;
 
-function buildSolvePrompt(subject: string): string {
+const TEACHING_METHODS: Record<string, string> = {
+  "common-core": `Use the Common Core approach:
+- Emphasize conceptual understanding over procedures
+- Show multiple strategies/representations when possible
+- Use number lines, arrays, area models, tape diagrams
+- Focus on "why" methods work, not just "how"
+- Reference Common Core standards language (decompose, compose, place value strategies)
+- Encourage mental math strategies`,
+  "singapore": `Use the Singapore Math approach:
+- Use the Concrete → Pictorial → Abstract (CPA) progression
+- Draw bar models (model drawing) to visualize the problem
+- Emphasize number bonds and part-whole relationships
+- Use place value charts and branching methods
+- Focus on mastery of fewer concepts with deeper understanding
+- Describe any visual models step by step (e.g. "Draw a bar model with...")`,
+};
+
+function buildSolvePrompt(subject: string, teachingMethod?: string): string {
   const tutor = SUBJECT_PROMPTS[subject] || SUBJECT_PROMPTS.general;
-  return `${tutor.prompt}
+  const methodNote = teachingMethod && TEACHING_METHODS[teachingMethod]
+    ? `\n\nTEACHING METHOD:\n${TEACHING_METHODS[teachingMethod]}\n`
+    : "";
+  return `${tutor.prompt}${methodNote}
 
 When given a photo of a math problem:
 1. First, identify what the problem is asking
@@ -142,7 +162,7 @@ async function detectSubject(imageBase64: string): Promise<string> {
   }
 }
 
-export async function solveMathProblem(imageBase64: string): Promise<any> {
+export async function solveMathProblem(imageBase64: string, teachingMethod?: string): Promise<any> {
   const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
   const mediaType = imageBase64.startsWith("data:image/png") ? "image/png" : "image/jpeg";
 
@@ -154,7 +174,7 @@ export async function solveMathProblem(imageBase64: string): Promise<any> {
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: 4096,
-    system: buildSolvePrompt(subject),
+    system: buildSolvePrompt(subject, teachingMethod),
     messages: [
       {
         role: "user",

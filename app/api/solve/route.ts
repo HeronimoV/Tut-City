@@ -6,7 +6,7 @@ export const maxDuration = 30; // Allow up to 30s for Claude to respond
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { image } = body;
+    const { image, teachingMethod } = body;
     if (!image) return NextResponse.json({ error: "No image provided" }, { status: 400 });
 
     // Check image size (base64 string length)
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = await solveMathProblem(image);
+    const result = await solveMathProblem(image, teachingMethod);
     return NextResponse.json(result);
   } catch (error: any) {
     console.error("Solve error:", error?.message, error?.status);
