@@ -64,7 +64,7 @@ export default function LandingPage() {
           {[
             { emoji: "📸", title: "Snap a pic", desc: "Take a photo of any math problem" },
             { emoji: "🧠", title: "Step-by-step", desc: "Get clear explanations for every step" },
-            { emoji: "📐", title: "All subjects", desc: "Geometry, Algebra, Trig, Calc & more" },
+            { emoji: "🎓", title: "Grades 1-12", desc: "All subjects · All levels · One app" },
           ].map((f, i) => (
             <div
               key={i}
