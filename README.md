@@ -7,7 +7,7 @@
 - 📸 **Photo upload / camera capture** — snap a pic or drag & drop
 - 🧠 **Step-by-step solver** — powered by Claude AI vision, reveals steps one at a time
 - 💬 **Follow-up chat** — ask questions about any step you don't understand
-- 💳 **Stripe subscriptions** — $34.99/month paywall
+- 💳 **Stripe subscriptions** — $39.99/month paywall
 - 🎟️ **Promo codes** — grant free access (e.g., `LARIZZA` for unlimited)
 - 🔐 **Auth** — Google sign-in or email/password via NextAuth.js
 
@@ -50,11 +50,11 @@ Fill in your keys:
 | `STRIPE_SECRET_KEY` | Stripe secret key |
 | `STRIPE_PUBLISHABLE_KEY` | Stripe publishable key |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
-| `STRIPE_PRICE_ID` | Stripe Price ID for the $34.99/mo subscription |
+| `STRIPE_PRICE_ID` | Stripe Price ID for the $39.99/mo subscription |
 
 ### 3. Set up Stripe
 
-1. Create a product in [Stripe Dashboard](https://dashboard.stripe.com/products) — "$34.99/month Tut City subscription"
+1. Create a product in [Stripe Dashboard](https://dashboard.stripe.com/products) — "$39.99/month Tut City subscription"
 2. Copy the Price ID to `STRIPE_PRICE_ID`
 3. Set up a webhook endpoint pointing to `https://yourdomain.com/api/webhook` for events: `checkout.session.completed`, `customer.subscription.deleted`
 

@@ -37,7 +37,7 @@ export default function PaywallGate({ onSubscribed }: Props) {
       <p className="text-gray-500 mb-6">Unlimited geometry help, anytime</p>
 
       <div className="bg-violet-50 rounded-2xl p-5 mb-6">
-        <div className="text-4xl font-extrabold gradient-text mb-1">$34.99</div>
+        <div className="text-4xl font-extrabold gradient-text mb-1">$39.99</div>
         <div className="text-gray-500 text-sm">per month</div>
         <ul className="mt-4 space-y-2 text-left">
           {[

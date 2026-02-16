@@ -1,20 +1,42 @@
 "use client";
 
 import { useSession, signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
 
-export default function LandingPage() {
+function LandingPageInner() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Store referral code from URL
   useEffect(() => {
-    if (session) router.push("/dashboard");
+    const ref = searchParams.get("ref");
+    if (ref) {
+      localStorage.setItem("tut_ref", ref);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (session) {
+      // Track referral after sign-in
+      const ref = localStorage.getItem("tut_ref");
+      if (ref) {
+        fetch("/api/referral", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: ref }),
+        }).finally(() => {
+          localStorage.removeItem("tut_ref");
+        });
+      }
+      router.push("/dashboard");
+    }
   }, [session, router]);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
@@ -137,10 +159,18 @@ export default function LandingPage() {
             </form>
           )}
           <p className="text-center text-white/50 text-xs mt-4">
-            3 free solves • Then $34.99/mo • Cancel anytime
+            3 free solves • Then $39.99/mo • Cancel anytime
           </p>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LandingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen gradient-bg flex items-center justify-center"><div className="text-white text-2xl animate-pulse">Loading...</div></div>}>
+      <LandingPageInner />
+    </Suspense>
   );
 }

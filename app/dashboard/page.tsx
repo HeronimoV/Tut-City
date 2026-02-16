@@ -82,6 +82,12 @@ export default function Dashboard() {
             📊 Progress
           </button>
           <button
+            onClick={() => router.push("/affiliate")}
+            className="text-white/80 text-sm hover:text-white transition"
+          >
+            🤝 Affiliate
+          </button>
+          <button
             onClick={() => signOut()}
             className="text-white/70 text-sm hover:text-white transition"
           >

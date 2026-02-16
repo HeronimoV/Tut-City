@@ -321,3 +321,158 @@ export async function updatePromoCode(
   if (error) throw error;
   return data;
 }
+
+// ─── Affiliates ─────────────────────────────────────────────
+
+export async function createAffiliate(userId: string, code: string, name: string, email: string) {
+  const { data, error } = await supabase()
+    .from("affiliates")
+    .insert({ user_id: userId, code: code.toLowerCase(), name, email })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function getAffiliate(code: string) {
+  const { data, error } = await supabase()
+    .from("affiliates")
+    .select("*")
+    .eq("code", code.toLowerCase())
+    .single();
+  if (error && error.code !== "PGRST116") throw error;
+  return data;
+}
+
+export async function getAffiliateByUserId(userId: string) {
+  const { data, error } = await supabase()
+    .from("affiliates")
+    .select("*")
+    .eq("user_id", userId)
+    .single();
+  if (error && error.code !== "PGRST116") throw error;
+  return data;
+}
+
+export async function getAllAffiliates() {
+  const { data, error } = await supabase()
+    .from("affiliates")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function trackReferral(affiliateCode: string, referredUserId: string) {
+  const affiliate = await getAffiliate(affiliateCode);
+  if (!affiliate || !affiliate.active) return null;
+
+  // Check if already referred
+  const { data: existing } = await supabase()
+    .from("referrals")
+    .select("id")
+    .eq("referred_user_id", referredUserId)
+    .single();
+  if (existing) return null;
+
+  const { data, error } = await supabase()
+    .from("referrals")
+    .insert({ affiliate_id: affiliate.id, referred_user_id: referredUserId })
+    .select()
+    .single();
+  if (error) throw error;
+
+  // Update affiliate total_referrals
+  await supabase()
+    .from("affiliates")
+    .update({ total_referrals: affiliate.total_referrals + 1 })
+    .eq("id", affiliate.id);
+
+  // Mark profile as referred
+  await supabase()
+    .from("profiles")
+    .update({ referred_by: affiliateCode })
+    .eq("id", referredUserId);
+
+  return data;
+}
+
+export async function updateReferralStatus(referredUserId: string, status: string, commissionAmount: number) {
+  // Get the referral
+  const { data: referral, error: refErr } = await supabase()
+    .from("referrals")
+    .select("*, affiliates(*)")
+    .eq("referred_user_id", referredUserId)
+    .single();
+  if (refErr || !referral) return null;
+
+  // Update referral
+  await supabase()
+    .from("referrals")
+    .update({ status, commission_amount: commissionAmount })
+    .eq("id", referral.id);
+
+  // Update affiliate earnings
+  if (status === "subscribed" && commissionAmount > 0) {
+    const affiliate = referral.affiliates;
+    await supabase()
+      .from("affiliates")
+      .update({
+        total_earnings: (affiliate.total_earnings || 0) + commissionAmount,
+        pending_earnings: (affiliate.pending_earnings || 0) + commissionAmount,
+      })
+      .eq("id", affiliate.id);
+  }
+
+  return referral;
+}
+
+export async function getAffiliateStats(affiliateId: string) {
+  const { data: affiliate } = await supabase()
+    .from("affiliates")
+    .select("*")
+    .eq("id", affiliateId)
+    .single();
+
+  const { data: referrals } = await supabase()
+    .from("referrals")
+    .select("*")
+    .eq("affiliate_id", affiliateId);
+
+  const allRefs = referrals || [];
+  return {
+    ...affiliate,
+    referrals: allRefs,
+    activeSubscribers: allRefs.filter((r: any) => r.status === "subscribed").length,
+    signedUp: allRefs.filter((r: any) => r.status === "signed_up").length,
+    churned: allRefs.filter((r: any) => r.status === "churned").length,
+  };
+}
+
+export async function getAffiliateReferrals(affiliateId: string) {
+  const { data, error } = await supabase()
+    .from("referrals")
+    .select("*")
+    .eq("affiliate_id", affiliateId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function markEarningsPaid(affiliateId: string, amount: number) {
+  const { data: affiliate } = await supabase()
+    .from("affiliates")
+    .select("*")
+    .eq("id", affiliateId)
+    .single();
+  if (!affiliate) throw new Error("Affiliate not found");
+
+  const newPending = Math.max(0, (affiliate.pending_earnings || 0) - amount);
+  const newPaid = (affiliate.paid_earnings || 0) + amount;
+
+  const { error } = await supabase()
+    .from("affiliates")
+    .update({ pending_earnings: newPending, paid_earnings: newPaid })
+    .eq("id", affiliateId);
+  if (error) throw error;
+}
