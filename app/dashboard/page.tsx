@@ -6,6 +6,28 @@ import { useEffect, useState } from "react";
 import PaywallGate from "@/components/PaywallGate";
 import PromoCodeInput from "@/components/PromoCodeInput";
 
+const quotes = [
+  "Math is not about numbers, equations, or algorithms: it is about understanding. 🧠",
+  "The only way to learn mathematics is to do mathematics. 💪",
+  "Every expert was once a beginner. Keep going! 🌟",
+  "Mistakes are proof that you are trying. 🎯",
+  "Small daily improvements lead to stunning results. 📈",
+  "You don't have to be great to start, but you have to start to be great. 🚀",
+  "Practice isn't the thing you do once you're good. It's the thing you do that makes you good. ✨",
+];
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+function getDailyQuote() {
+  const day = Math.floor(Date.now() / 86400000);
+  return quotes[day % quotes.length];
+}
+
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -14,6 +36,8 @@ export default function Dashboard() {
   const [trialRemaining, setTrialRemaining] = useState(3);
   const [isPaid, setIsPaid] = useState(false);
   const [totalSolves, setTotalSolves] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [recentSolves, setRecentSolves] = useState<{ subject: string; concept: string; score: number; date: string }[]>([]);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/");
@@ -31,10 +55,18 @@ export default function Dashboard() {
         setChecking(false);
       })
       .catch(() => {
-        // Fallback: grant access on API failure
         setHasAccess(true);
         setChecking(false);
       });
+
+    // Fetch progress for streak and recent solves
+    fetch("/api/progress")
+      .then((r) => r.json())
+      .then((data) => {
+        setStreak(data.streak ?? 0);
+        setRecentSolves((data.recentSolves ?? []).slice(0, 3));
+      })
+      .catch(() => {});
   }, [status]);
 
   const onTrial = !isPaid && trialRemaining > 0;
@@ -69,6 +101,8 @@ export default function Dashboard() {
     );
   }
 
+  const firstName = session?.user?.name?.split(" ")[0] || "there";
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top bar */}
@@ -98,11 +132,25 @@ export default function Dashboard() {
 
       <div className="max-w-lg mx-auto px-4 py-8">
         {/* Welcome */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800">
-            Hey {session?.user?.name?.split(" ")[0] || "there"}! 👋
+            {getGreeting()}, {firstName}! 👋
           </h2>
-          <p className="text-gray-500 mt-1">Ready to crush some geometry?</p>
+          <p className="text-gray-500 mt-1">Ready to crush some math?</p>
+        </div>
+
+        {/* Streak */}
+        {streak > 0 && (
+          <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3 mb-4 text-center animate-slide-up">
+            <span className="text-orange-600 font-bold text-sm">🔥 {streak}-day streak! Keep it going!</span>
+          </div>
+        )}
+
+        {/* Daily quote */}
+        <div className="bg-gradient-to-r from-violet-50 to-blue-50 border border-violet-100 rounded-2xl p-4 mb-4">
+          <p className="text-violet-700 text-sm font-medium italic">
+            💡 {getDailyQuote()}
+          </p>
         </div>
 
         {/* Mini stats */}
@@ -120,10 +168,29 @@ export default function Dashboard() {
         {/* Main action */}
         <button
           onClick={() => router.push("/solve")}
-          className="w-full gradient-bg text-white font-bold text-xl py-6 rounded-3xl shadow-lg hover:shadow-xl transition-all active:scale-[0.98] mb-6"
+          className="w-full gradient-bg text-white font-bold text-xl py-6 rounded-3xl shadow-lg hover:shadow-xl hover-lift active:scale-[0.98] mb-6"
         >
           📸 Solve a Problem
         </button>
+
+        {/* Recently solved */}
+        {recentSolves.length > 0 && (
+          <div className="bg-white rounded-2xl p-4 card-shadow mb-6">
+            <h3 className="font-bold text-gray-700 text-sm mb-3">🕐 Recently solved</h3>
+            <div className="space-y-2">
+              {recentSolves.map((s, i) => (
+                <div key={i} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                  <span className="text-sm text-gray-600">{s.subject} · {s.concept}</span>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                    s.score >= 80 ? "bg-green-50 text-green-600" : s.score >= 50 ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
+                  }`}>
+                    {s.score}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Subjects */}
         <div className="grid grid-cols-3 gap-3">
@@ -138,7 +205,7 @@ export default function Dashboard() {
             { emoji: "∫", name: "Calculus" },
             { emoji: "📉", name: "Statistics" },
           ].map((s, i) => (
-            <div key={i} className="bg-white rounded-2xl p-3 card-shadow text-center">
+            <div key={i} className="bg-white rounded-2xl p-3 card-shadow text-center hover-glow border border-transparent cursor-default">
               <div className="text-2xl mb-1">{s.emoji}</div>
               <div className="text-xs text-gray-500 font-medium">{s.name}</div>
             </div>
@@ -154,13 +221,6 @@ export default function Dashboard() {
             <p className="text-amber-600 text-xs mt-1">Subscribe for unlimited access!</p>
           </div>
         )}
-
-        {/* Recent tip */}
-        <div className="mt-6 bg-violet-50 border border-violet-100 rounded-2xl p-4">
-          <p className="text-violet-700 text-sm font-medium">
-            💡 Pro tip: Make sure the whole problem is visible in the photo for best results!
-          </p>
-        </div>
       </div>
     </div>
   );

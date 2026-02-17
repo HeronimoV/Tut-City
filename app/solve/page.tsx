@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import CameraCapture from "@/components/CameraCapture";
 import StepWalkthrough from "@/components/StepWalkthrough";
 import ChatFollowUp from "@/components/ChatFollowUp";
+import Confetti from "@/components/Confetti";
 
 interface ComprehensionCheck {
   question: string;
@@ -24,6 +25,41 @@ interface SolveResult {
   subjectEmoji?: string;
 }
 
+function BrainLoader() {
+  const symbols = ["π", "∑", "√", "÷", "×", "∞", "±", "∫"];
+  return (
+    <div className="text-center py-16">
+      <div className="relative inline-block">
+        <div className="text-5xl brain-pulse">🧠</div>
+        {symbols.map((s, i) => (
+          <span
+            key={i}
+            className="symbol-float text-white/60"
+            style={{
+              left: `${50 + 40 * Math.cos((i / symbols.length) * Math.PI * 2)}%`,
+              top: `${50 + 40 * Math.sin((i / symbols.length) * Math.PI * 2)}%`,
+              animationDelay: `${i * 0.25}s`,
+            }}
+          >
+            {s}
+          </span>
+        ))}
+      </div>
+      <p className="text-violet-600 font-semibold text-lg mt-6">Analyzing your problem...</p>
+      <p className="text-gray-400 text-sm mt-2">Breaking it down step by step</p>
+      <div className="mt-6 flex justify-center gap-1">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="w-3 h-3 bg-violet-400 rounded-full animate-bounce"
+            style={{ animationDelay: `${i * 150}ms` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function SolvePage() {
   const { status } = useSession();
   const router = useRouter();
@@ -34,13 +70,13 @@ export default function SolvePage() {
   const [showChat, setShowChat] = useState(false);
   const [solveStartTime, setSolveStartTime] = useState<number>(0);
   const [teachingMethod, setTeachingMethod] = useState<string>("auto");
+  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/");
   }, [status, router]);
 
   const handleImageCapture = async (imageData: string) => {
-    // Check trial/access via API
     try {
       const accessRes = await fetch("/api/access");
       const accessData = await accessRes.json();
@@ -48,9 +84,7 @@ export default function SolvePage() {
         setError("Free trial used up! Subscribe for unlimited access 🎟️");
         return;
       }
-    } catch {
-      // If API fails, allow (graceful degradation)
-    }
+    } catch {}
 
     setImage(imageData);
     setError(null);
@@ -65,7 +99,6 @@ export default function SolvePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image: imageData, teachingMethod }),
       });
-
       if (!res.ok) throw new Error("Failed to solve. Try again!");
       const data = await res.json();
       setResult(data);
@@ -77,6 +110,11 @@ export default function SolvePage() {
   };
 
   const handleSolveComplete = async (score: number, comprehensionResults: Record<string, boolean>, stepTimes: Record<string, number>) => {
+    // Trigger confetti for high scores
+    if (score >= 80) {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 100);
+    }
     setShowChat(true);
     if (!result) return;
     const timeSpent = Math.round((Date.now() - solveStartTime) / 1000);
@@ -95,9 +133,7 @@ export default function SolvePage() {
           time_spent_seconds: timeSpent,
         }),
       });
-    } catch {
-      // Non-blocking — don't disrupt UX if save fails
-    }
+    } catch {}
   };
 
   const handleReset = () => {
@@ -109,12 +145,12 @@ export default function SolvePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Confetti active={showConfetti} />
+
       {/* Top bar */}
       <div className="gradient-bg px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.push("/dashboard")} className="text-white text-2xl">
-            ←
-          </button>
+          <button onClick={() => router.push("/dashboard")} className="text-white text-2xl">←</button>
           <h1 className="text-white font-bold text-lg">Solve a Problem</h1>
         </div>
         <button onClick={() => router.push("/progress")} className="text-white/80 text-sm hover:text-white transition">
@@ -125,7 +161,6 @@ export default function SolvePage() {
       <div className="max-w-lg mx-auto px-4 py-6">
         {!image && !result && (
           <>
-            {/* Teaching Method Selector */}
             <div className="mb-5">
               <h3 className="text-sm font-semibold text-gray-500 mb-2 text-center">Teaching Method</h3>
               <div className="flex gap-2">
@@ -143,9 +178,7 @@ export default function SolvePage() {
                         : "bg-white border border-gray-200 hover:border-violet-300"
                     }`}
                   >
-                    <div className={`text-sm font-bold ${teachingMethod === m.id ? "text-violet-700" : "text-gray-700"}`}>
-                      {m.label}
-                    </div>
+                    <div className={`text-sm font-bold ${teachingMethod === m.id ? "text-violet-700" : "text-gray-700"}`}>{m.label}</div>
                     <div className="text-xs text-gray-400 mt-0.5">{m.desc}</div>
                   </button>
                 ))}
@@ -155,37 +188,17 @@ export default function SolvePage() {
           </>
         )}
 
-        {solving && (
-          <div className="text-center py-16">
-            <div className="text-5xl mb-4 animate-float">🧠</div>
-            <p className="text-violet-600 font-semibold text-lg">Analyzing your problem...</p>
-            <p className="text-gray-400 text-sm mt-2">This usually takes a few seconds</p>
-            <div className="mt-6 flex justify-center gap-1">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="w-3 h-3 bg-violet-400 rounded-full animate-bounce"
-                  style={{ animationDelay: `${i * 150}ms` }}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+        {solving && <BrainLoader />}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-center">
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-center animate-slide-up">
             <p className="text-red-600 font-medium">{error}</p>
-            <button
-              onClick={handleReset}
-              className="mt-3 text-red-500 underline text-sm"
-            >
-              Try again
-            </button>
+            <button onClick={handleReset} className="mt-3 text-red-500 underline text-sm">Try again</button>
           </div>
         )}
 
         {result && !showChat && (
-          <div>
+          <div className="animate-slide-up">
             {result.subjectEmoji && result.subjectName && (
               <div className="flex justify-center mb-4">
                 <div className="bg-violet-50 rounded-full px-4 py-2 inline-flex items-center gap-2">
@@ -200,26 +213,20 @@ export default function SolvePage() {
               </div>
             )}
             <StepWalkthrough result={result} onComplete={handleSolveComplete} />
-            <button
-              onClick={handleReset}
-              className="w-full mt-4 py-3 text-violet-500 font-semibold text-sm hover:text-violet-700 transition"
-            >
+            <button onClick={handleReset} className="w-full mt-4 py-3 text-violet-500 font-semibold text-sm hover:text-violet-700 transition">
               ← Solve another problem
             </button>
           </div>
         )}
 
         {showChat && result && (
-          <div>
+          <div className="animate-slide-up">
             <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-4 text-center">
               <p className="text-green-700 font-semibold">✅ Answer: {result.answer}</p>
               <p className="text-green-600 text-sm mt-1">Concept: {result.concept}</p>
             </div>
             <ChatFollowUp problem={result} />
-            <button
-              onClick={handleReset}
-              className="w-full mt-4 py-3 text-violet-500 font-semibold text-sm"
-            >
+            <button onClick={handleReset} className="w-full mt-4 py-3 text-violet-500 font-semibold text-sm">
               ← Solve another problem
             </button>
           </div>

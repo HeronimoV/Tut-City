@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface ProgressData {
   totalSolves: number;
@@ -12,6 +12,42 @@ interface ProgressData {
   recentSolves: { subject: string; concept: string; score: number; date: string }[];
   weaknesses: { subject: string; concept: string; score: number; recommendation: string }[];
   strengths: { subject: string; concept: string; rate: number }[];
+}
+
+function CountUpNumber({ target, suffix = "" }: { target: number; suffix?: string }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    if (target === 0 || started.current) return;
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !started.current) {
+        started.current = true;
+        let start = 0;
+        const step = Math.max(1, Math.ceil(target / 40));
+        const timer = setInterval(() => {
+          start += step;
+          if (start >= target) {
+            setCount(target);
+            clearInterval(timer);
+          } else {
+            setCount(start);
+          }
+        }, 25);
+      }
+    }, { threshold: 0.3 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [target]);
+
+  return (
+    <div ref={ref} className="text-2xl font-extrabold text-violet-600">
+      {count}{suffix}
+    </div>
+  );
 }
 
 export default function ProgressPage() {
@@ -49,7 +85,6 @@ export default function ProgressPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top bar */}
       <div className="gradient-bg px-4 py-3 flex items-center gap-3">
         <button onClick={() => router.push("/dashboard")} className="text-white text-2xl">←</button>
         <h1 className="text-white font-bold text-lg">📊 My Progress</h1>
@@ -58,15 +93,15 @@ export default function ProgressPage() {
       <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
         {/* Stats bar */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white rounded-2xl p-4 card-shadow text-center">
-            <div className="text-2xl font-extrabold text-violet-600">{progress?.totalSolves || 0}</div>
+          <div className="bg-white rounded-2xl p-4 card-shadow text-center hover-glow border border-transparent">
+            <CountUpNumber target={progress?.totalSolves || 0} />
             <div className="text-xs text-gray-500 mt-1">Problems Solved</div>
           </div>
-          <div className="bg-white rounded-2xl p-4 card-shadow text-center">
-            <div className="text-2xl font-extrabold text-violet-600">{progress?.avgScore || 0}%</div>
+          <div className="bg-white rounded-2xl p-4 card-shadow text-center hover-glow border border-transparent">
+            <CountUpNumber target={progress?.avgScore || 0} suffix="%" />
             <div className="text-xs text-gray-500 mt-1">Avg Score</div>
           </div>
-          <div className="bg-white rounded-2xl p-4 card-shadow text-center">
+          <div className="bg-white rounded-2xl p-4 card-shadow text-center hover-glow border border-transparent">
             <div className="text-2xl font-extrabold text-violet-600">🔥 {progress?.streak || 0}</div>
             <div className="text-xs text-gray-500 mt-1">Day Streak</div>
           </div>
@@ -74,7 +109,7 @@ export default function ProgressPage() {
 
         {/* Subject breakdown */}
         {progress?.subjectBreakdown && progress.subjectBreakdown.length > 0 && (
-          <div className="bg-white rounded-2xl p-5 card-shadow">
+          <div className="bg-white rounded-2xl p-5 card-shadow animate-slide-up">
             <h3 className="font-bold text-gray-800 mb-4">📚 By Subject</h3>
             <div className="space-y-3">
               {progress.subjectBreakdown.map((s) => (
@@ -85,7 +120,7 @@ export default function ProgressPage() {
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-3">
                     <div
-                      className={`h-3 rounded-full transition-all ${barColor(s.avgScore)}`}
+                      className={`h-3 rounded-full transition-all duration-700 ${barColor(s.avgScore)}`}
                       style={{ width: `${Math.max(5, s.avgScore)}%` }}
                     />
                   </div>
@@ -101,7 +136,7 @@ export default function ProgressPage() {
             <h3 className="font-bold text-gray-800 mb-3">💪 You&apos;re great at:</h3>
             <div className="flex flex-wrap gap-2">
               {progress.strengths.map((s, i) => (
-                <span key={i} className="bg-green-50 border border-green-200 text-green-700 text-sm px-3 py-1.5 rounded-full font-medium">
+                <span key={i} className="bg-green-50 border border-green-200 text-green-700 text-sm px-3 py-1.5 rounded-full font-medium hover-lift">
                   {s.concept} ({s.rate}%)
                 </span>
               ))}
@@ -154,15 +189,17 @@ export default function ProgressPage() {
 
         {/* Empty state */}
         {progress?.totalSolves === 0 && (
-          <div className="text-center py-12">
-            <div className="text-5xl mb-4">📝</div>
-            <h3 className="text-gray-700 font-bold text-lg">No problems solved yet!</h3>
-            <p className="text-gray-400 mt-2">Solve your first problem to start tracking progress.</p>
+          <div className="text-center py-12 animate-slide-up">
+            <div className="text-6xl mb-4">🚀</div>
+            <h3 className="text-gray-700 font-bold text-xl">Your math journey starts here!</h3>
+            <p className="text-gray-400 mt-2 max-w-xs mx-auto">
+              Solve your first problem and watch your progress grow. Every expert started with step one.
+            </p>
             <button
               onClick={() => router.push("/solve")}
-              className="mt-4 gradient-bg text-white font-bold px-6 py-3 rounded-2xl"
+              className="mt-6 gradient-bg text-white font-bold px-8 py-4 rounded-2xl hover-lift shadow-lg"
             >
-              📸 Solve a Problem
+              📸 Solve Your First Problem
             </button>
           </div>
         )}
