@@ -7,6 +7,7 @@ import CameraCapture from "@/components/CameraCapture";
 import StepWalkthrough from "@/components/StepWalkthrough";
 import ChatFollowUp from "@/components/ChatFollowUp";
 import Confetti from "@/components/Confetti";
+import StuckButton from "@/components/StuckButton";
 
 interface ComprehensionCheck {
   question: string;
@@ -71,6 +72,7 @@ export default function SolvePage() {
   const [solveStartTime, setSolveStartTime] = useState<number>(0);
   const [teachingMethod, setTeachingMethod] = useState<string>("auto");
   const [showConfetti, setShowConfetti] = useState(false);
+  const [currentStepInfo, setCurrentStepInfo] = useState<any>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/");
@@ -133,6 +135,9 @@ export default function SolvePage() {
           time_spent_seconds: timeSpent,
         }),
       });
+      // Update local solve count for notification prompt
+      const count = parseInt(localStorage.getItem("total-solves-count") || "0", 10);
+      localStorage.setItem("total-solves-count", String(count + 1));
     } catch {}
   };
 
@@ -141,6 +146,7 @@ export default function SolvePage() {
     setResult(null);
     setError(null);
     setShowChat(false);
+    setCurrentStepInfo(null);
   };
 
   return (
@@ -153,9 +159,14 @@ export default function SolvePage() {
           <button onClick={() => router.push("/dashboard")} className="text-white text-2xl">←</button>
           <h1 className="text-white font-bold text-lg">Solve a Problem</h1>
         </div>
-        <button onClick={() => router.push("/progress")} className="text-white/80 text-sm hover:text-white transition">
-          📊 Progress
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => router.push("/practice")} className="text-white/80 text-sm hover:text-white transition">
+            📝 Practice
+          </button>
+          <button onClick={() => router.push("/progress")} className="text-white/80 text-sm hover:text-white transition">
+            📊 Progress
+          </button>
+        </div>
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-6">
@@ -232,6 +243,11 @@ export default function SolvePage() {
           </div>
         )}
       </div>
+
+      {/* Stuck button during walkthrough */}
+      {result && !showChat && (
+        <StuckButton stepInfo={currentStepInfo} />
+      )}
     </div>
   );
 }

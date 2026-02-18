@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getStudentProgress, getWeaknesses, getStrengths } from "@/lib/db";
+import { getStudentProgress, getWeaknesses, getStrengths, getGamificationStats } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -9,14 +9,16 @@ export async function GET(req: NextRequest) {
 
   const userId = (session.user as any).id;
   try {
-    const [progress, weaknesses, strengths] = await Promise.all([
+    const [progress, weaknesses, strengths, gamification] = await Promise.all([
       getStudentProgress(userId),
       getWeaknesses(userId),
       getStrengths(userId),
+      getGamificationStats(userId),
     ]);
 
     return NextResponse.json({
       ...progress,
+      gamification,
       weaknesses: weaknesses.map((w) => ({
         subject: w.subject,
         concept: w.concept,

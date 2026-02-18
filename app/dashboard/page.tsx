@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import PaywallGate from "@/components/PaywallGate";
 import PromoCodeInput from "@/components/PromoCodeInput";
+import InstallPrompt from "@/components/InstallPrompt";
+import NotificationPrompt from "@/components/NotificationPrompt";
 
 const quotes = [
   "Math is not about numbers, equations, or algorithms: it is about understanding. 🧠",
@@ -15,6 +17,15 @@ const quotes = [
   "You don't have to be great to start, but you have to start to be great. 🚀",
   "Practice isn't the thing you do once you're good. It's the thing you do that makes you good. ✨",
 ];
+
+const LEVEL_TITLES: Record<number, string> = {
+  1: "Beginner", 2: "Learner", 3: "Student", 4: "Scholar", 5: "Expert",
+  6: "Master", 7: "Genius", 8: "Legend", 9: "Prodigy",
+};
+
+function getLevelTitle(level: number) {
+  return LEVEL_TITLES[level] || "Math God";
+}
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -38,6 +49,9 @@ export default function Dashboard() {
   const [totalSolves, setTotalSolves] = useState(0);
   const [streak, setStreak] = useState(0);
   const [recentSolves, setRecentSolves] = useState<{ subject: string; concept: string; score: number; date: string }[]>([]);
+  const [xp, setXp] = useState(0);
+  const [level, setLevel] = useState(1);
+  const [badges, setBadges] = useState<{ id: string; name: string; emoji: string; earned_at: string }[]>([]);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/");
@@ -59,12 +73,19 @@ export default function Dashboard() {
         setChecking(false);
       });
 
-    // Fetch progress for streak and recent solves
+    // Fetch progress for streak, recent solves, and gamification
     fetch("/api/progress")
       .then((r) => r.json())
       .then((data) => {
         setStreak(data.streak ?? 0);
         setRecentSolves((data.recentSolves ?? []).slice(0, 3));
+        setXp(data.gamification?.xp ?? 0);
+        setLevel(data.gamification?.level ?? 1);
+        setBadges(data.gamification?.badges ?? []);
+        // Store solve count for notification prompt
+        if (typeof window !== "undefined") {
+          localStorage.setItem("total-solves-count", String(data.totalSolves ?? 0));
+        }
       })
       .catch(() => {});
   }, [status]);
@@ -139,6 +160,48 @@ export default function Dashboard() {
           <p className="text-gray-500 mt-1">Ready to crush some math?</p>
         </div>
 
+        {/* Install prompt */}
+        <InstallPrompt />
+
+        {/* Notification prompt */}
+        <NotificationPrompt />
+
+        {/* XP Bar & Level */}
+        {totalSolves > 0 && (
+          <div className="bg-white rounded-2xl p-4 card-shadow mb-4 animate-slide-up">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-bold text-gray-800 text-sm">
+                Level {level} — {getLevelTitle(level)} ⭐
+              </span>
+              <span className="text-violet-600 font-semibold text-sm">{xp.toLocaleString()} XP</span>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+              <div
+                className="h-full rounded-full gradient-bg transition-all duration-500"
+                style={{ width: `${((xp % 500) / 500) * 100}%` }}
+              />
+            </div>
+            <p className="text-gray-400 text-xs mt-1">{500 - (xp % 500)} XP to next level</p>
+          </div>
+        )}
+
+        {/* Recent badges */}
+        {badges.length > 0 && (
+          <div className="bg-violet-50 border border-violet-100 rounded-2xl p-3 mb-4 animate-slide-up">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-violet-700 text-sm font-semibold">🏅</span>
+              {badges.slice(-3).reverse().map((b, i) => (
+                <span key={i} className="bg-white text-violet-700 text-xs px-2 py-1 rounded-full shadow-sm">
+                  {b.emoji} {b.name}
+                </span>
+              ))}
+              {badges.length > 3 && (
+                <span className="text-violet-500 text-xs">+{badges.length - 3} more</span>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Streak */}
         {streak > 0 && (
           <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3 mb-4 text-center animate-slide-up">
@@ -168,10 +231,26 @@ export default function Dashboard() {
         {/* Main action */}
         <button
           onClick={() => router.push("/solve")}
-          className="w-full gradient-bg text-white font-bold text-xl py-6 rounded-3xl shadow-lg hover:shadow-xl hover-lift active:scale-[0.98] mb-6"
+          className="w-full gradient-bg text-white font-bold text-xl py-6 rounded-3xl shadow-lg hover:shadow-xl hover-lift active:scale-[0.98] mb-3"
         >
           📸 Solve a Problem
         </button>
+
+        {/* Secondary actions */}
+        <div className="flex gap-3 mb-6">
+          <button
+            onClick={() => router.push("/practice")}
+            className="flex-1 bg-white border-2 border-violet-200 text-violet-600 font-bold py-3 rounded-2xl hover:bg-violet-50 transition active:scale-[0.98]"
+          >
+            📝 Practice
+          </button>
+          <button
+            onClick={() => router.push("/parent")}
+            className="flex-1 bg-white border-2 border-blue-200 text-blue-600 font-bold py-3 rounded-2xl hover:bg-blue-50 transition active:scale-[0.98]"
+          >
+            👨‍👩‍👧 Parent View
+          </button>
+        </div>
 
         {/* Recently solved */}
         {recentSolves.length > 0 && (

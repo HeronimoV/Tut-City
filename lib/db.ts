@@ -212,6 +212,151 @@ export async function getStrengths(userId: string) {
     }));
 }
 
+// ─── Gamification ───────────────────────────────────────────
+
+const LEVEL_TITLES: Record<number, string> = {
+  1: "Beginner", 2: "Learner", 3: "Student", 4: "Scholar", 5: "Expert",
+  6: "Master", 7: "Genius", 8: "Legend", 9: "Prodigy",
+};
+
+export function getLevelTitle(level: number): string {
+  return LEVEL_TITLES[level] || "Math God";
+}
+
+export async function awardXP(userId: string, amount: number) {
+  const profile = await getProfile(userId);
+  if (!profile) return;
+  const newXP = (profile.xp || 0) + amount;
+  const newLevel = Math.max(1, Math.floor(newXP / 500) + 1);
+  await supabase()
+    .from("profiles")
+    .update({ xp: newXP, level: newLevel })
+    .eq("id", userId);
+  return { xp: newXP, level: newLevel };
+}
+
+export async function updateStreak(userId: string) {
+  const profile = await getProfile(userId);
+  if (!profile) return;
+
+  const today = new Date().toISOString().split("T")[0];
+  const lastSolve = profile.last_solve_date;
+
+  let newStreak = profile.current_streak || 0;
+  if (lastSolve === today) {
+    // Already solved today, no change
+    return { streak: newStreak };
+  }
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+  if (lastSolve === yesterdayStr) {
+    newStreak += 1;
+  } else {
+    newStreak = 1;
+  }
+
+  const longestStreak = Math.max(newStreak, profile.longest_streak || 0);
+
+  await supabase()
+    .from("profiles")
+    .update({
+      current_streak: newStreak,
+      longest_streak: longestStreak,
+      last_solve_date: today,
+    })
+    .eq("id", userId);
+
+  return { streak: newStreak };
+}
+
+export async function checkAndAwardBadges(userId: string) {
+  const profile = await getProfile(userId);
+  if (!profile) return [];
+
+  const currentBadges: { id: string; name: string; emoji: string; earned_at: string }[] = profile.badges || [];
+  const earnedIds = new Set(currentBadges.map((b) => b.id));
+
+  // Get solve count
+  const { count: solveCount } = await supabase()
+    .from("solves")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  // Get distinct subjects
+  const { data: subjectData } = await supabase()
+    .from("solves")
+    .select("subject")
+    .eq("user_id", userId);
+  const uniqueSubjects = new Set((subjectData || []).map((s: any) => s.subject));
+
+  // Get avg score
+  const { data: allSolves } = await supabase()
+    .from("solves")
+    .select("understanding_score")
+    .eq("user_id", userId);
+  const scores = (allSolves || []).map((s: any) => s.understanding_score || 0);
+  const avgScore = scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;
+  const hasPerfect = scores.some((s: number) => s === 100);
+
+  const streak = profile.current_streak || 0;
+  const total = solveCount || 0;
+
+  // Check conditions
+  const checks: [string, boolean][] = [
+    ["first_solve", total >= 1],
+    ["ten_solves", total >= 10],
+    ["fifty_solves", total >= 50],
+    ["hundred_solves", total >= 100],
+    ["streak_3", streak >= 3],
+    ["streak_7", streak >= 7],
+    ["streak_30", streak >= 30],
+    ["perfect_score", hasPerfect],
+    ["multi_subject", uniqueSubjects.size >= 3],
+    ["high_scorer", scores.length >= 5 && avgScore > 90],
+  ];
+
+  // Get badge definitions
+  const { data: badgeDefs } = await supabase().from("badge_definitions").select("*");
+  const defMap = new Map((badgeDefs || []).map((d: any) => [d.id, d]));
+
+  const newBadges: typeof currentBadges = [];
+  let bonusXP = 0;
+
+  for (const [id, condition] of checks) {
+    if (condition && !earnedIds.has(id)) {
+      const def = defMap.get(id);
+      if (def) {
+        newBadges.push({ id, name: def.name, emoji: def.emoji, earned_at: new Date().toISOString() });
+        bonusXP += def.xp_reward || 0;
+      }
+    }
+  }
+
+  if (newBadges.length > 0) {
+    const allBadges = [...currentBadges, ...newBadges];
+    await supabase().from("profiles").update({ badges: allBadges }).eq("id", userId);
+    if (bonusXP > 0) await awardXP(userId, bonusXP);
+  }
+
+  return newBadges;
+}
+
+export async function getGamificationStats(userId: string) {
+  const profile = await getProfile(userId);
+  if (!profile) return { xp: 0, level: 1, streak: 0, badges: [], levelTitle: "Beginner" };
+  return {
+    xp: profile.xp || 0,
+    level: profile.level || 1,
+    streak: profile.current_streak || 0,
+    longestStreak: profile.longest_streak || 0,
+    badges: profile.badges || [],
+    levelTitle: getLevelTitle(profile.level || 1),
+  };
+}
+
 // ─── Access Control ─────────────────────────────────────────
 
 export async function checkAccess(userId: string) {

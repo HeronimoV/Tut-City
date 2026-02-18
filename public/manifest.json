@@ -1,0 +1,14 @@
+{
+  "name": "Tut City",
+  "short_name": "TutCity",
+  "description": "AI Math Tutor · Grades 1-12",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#8B5CF6",
+  "theme_color": "#8B5CF6",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/branding/app-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/branding/app-icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

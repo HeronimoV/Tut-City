@@ -7,6 +7,9 @@ import {
   calculateWeaknesses,
   incrementFreeSolves,
   checkAccess,
+  awardXP,
+  updateStreak,
+  checkAndAwardBadges,
 } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
@@ -54,6 +57,14 @@ export async function POST(req: NextRequest) {
       await updateConceptScores(userId, subject, concept, firstTryCorrect, understanding_score || 0);
       await calculateWeaknesses(userId);
     }
+
+    // Gamification: award XP, update streak, check badges
+    let xpAmount = 50; // base XP
+    if ((understanding_score || 0) >= 80) xpAmount += 25;
+    if ((understanding_score || 0) === 100) xpAmount += 50;
+    await awardXP(userId, xpAmount);
+    await updateStreak(userId);
+    await checkAndAwardBadges(userId);
 
     // Increment free solves if on trial
     const access = await checkAccess(userId);
