@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import MathRenderer, { DiagramRenderer } from "./MathRenderer";
 
 interface ComprehensionCheck {
   question: string;
@@ -13,6 +14,8 @@ interface Step {
   action: string;
   why: string;
   result: string;
+  svg?: string | null;
+  svgCaption?: string | null;
   comprehensionCheck?: ComprehensionCheck | null;
 }
 
@@ -184,8 +187,8 @@ export default function StepWalkthrough({ result, onComplete }: Props) {
 
         {/* Answer */}
         <div className="bg-green-50 border border-green-200 rounded-2xl p-5 text-center mb-4">
-          <p className="text-green-700 font-bold text-xl mb-1">🎉 {result.answer}</p>
-          <p className="text-green-600 text-sm mt-2">Key concept: {result.concept}</p>
+          <p className="text-green-700 font-bold text-xl mb-1">🎉 <MathRenderer text={result.answer} /></p>
+          <p className="text-green-600 text-sm mt-2">Key concept: <MathRenderer text={result.concept} /></p>
         </div>
 
         <button
@@ -210,7 +213,7 @@ export default function StepWalkthrough({ result, onComplete }: Props) {
       {/* Problem overview */}
       <div className="bg-white rounded-2xl p-5 card-shadow mb-4">
         <h3 className="font-bold text-gray-800 text-lg mb-2">🔍 The Problem</h3>
-        <p className="text-gray-600">{result.problem}</p>
+        <p className="text-gray-600"><MathRenderer text={result.problem} /></p>
       </div>
 
       {/* Givens */}
@@ -220,7 +223,7 @@ export default function StepWalkthrough({ result, onComplete }: Props) {
           {result.given.map((g, i) => (
             <li key={i} className="text-violet-600 text-sm flex items-start gap-2">
               <span className="mt-0.5">•</span>
-              <span>{g}</span>
+              <MathRenderer text={g} />
             </li>
           ))}
         </ul>
@@ -237,19 +240,20 @@ export default function StepWalkthrough({ result, onComplete }: Props) {
               <span className="bg-violet-100 text-violet-700 text-sm font-bold w-7 h-7 rounded-full flex items-center justify-center">
                 {step.step}
               </span>
-              <h4 className="font-semibold text-gray-800 text-sm">{step.action}</h4>
+              <h4 className="font-semibold text-gray-800 text-sm"><MathRenderer text={step.action} /></h4>
             </div>
             <div className="ml-9 space-y-2">
               <div className="bg-blue-50 rounded-xl p-3">
                 <p className="text-blue-700 text-sm">
                   <span className="font-semibold">Why? </span>
-                  {step.why}
+                  <MathRenderer text={step.why} />
                 </p>
               </div>
               <p className="text-gray-600 text-sm">
                 <span className="font-semibold">→ </span>
-                {step.result}
+                <MathRenderer text={step.result} />
               </p>
+              {step.svg && <DiagramRenderer svg={step.svg} caption={step.svgCaption || undefined} />}
             </div>
           </div>
         ))}
@@ -259,7 +263,7 @@ export default function StepWalkthrough({ result, onComplete }: Props) {
       {showCheck && currentStep?.comprehensionCheck && (
         <div className="bg-white rounded-2xl p-5 card-shadow mb-4 border-2 border-violet-200 animate-slide-up">
           <h4 className="font-bold text-violet-700 text-sm mb-1">🧠 Quick Check!</h4>
-          <p className="text-gray-700 text-sm mb-4">{currentStep.comprehensionCheck.question}</p>
+          <p className="text-gray-700 text-sm mb-4"><MathRenderer text={currentStep.comprehensionCheck.question} /></p>
           <div className="space-y-2">
             {currentStep.comprehensionCheck.options.map((opt, idx) => {
               let cls = "bg-gray-50 border border-gray-200 hover:border-violet-300 hover:bg-violet-50";
@@ -280,7 +284,7 @@ export default function StepWalkthrough({ result, onComplete }: Props) {
                   className={`w-full text-left p-3 rounded-xl text-sm transition ${cls}`}
                 >
                   <span className="font-semibold text-gray-500 mr-2">{String.fromCharCode(65 + idx)}.</span>
-                  {opt}
+                  <MathRenderer text={opt} />
                 </button>
               );
             })}

@@ -97,38 +97,60 @@ When given a photo of a math problem:
 4. For EACH step, explain WHY you're doing it (reference the theorem, property, or rule)
 5. Use simple language a high schooler would understand
 6. Be encouraging!
-7. For every 2nd or 3rd step, include a comprehension check question — a multiple choice question testing understanding of that step
+7. For every 2nd or 3rd step, include a comprehension check question
+8. Use LaTeX for ALL math expressions (wrap in $ for inline, $$ for display)
+9. Use color tags to highlight what CHANGED in each step: [[highlight]]old part[[/highlight]] → [[green]]new result[[/green]]
+10. When helpful (especially geometry, fractions, graphs), include an SVG diagram in the step
+
+MATH FORMATTING RULES:
+- Always use LaTeX: write $\\frac{3}{4}$ not 3/4, write $x^2$ not x^2, write $\\sqrt{16}$ not sqrt(16)
+- Use $$ for important equations that should be centered on their own line
+- In the "result" field, use [[highlight]] around the part that changed FROM and [[green]] around what it became
+
+SVG DIAGRAM RULES:
+- Include an "svg" field in steps where a visual helps (geometry shapes, number lines, bar models, graphs, fraction circles)
+- SVGs must be self-contained, max 300x200px viewBox, use simple shapes
+- Use colors: #8B5CF6 (violet), #3B82F6 (blue), #10B981 (green), #F59E0B (amber)
+- Label key parts with <text> elements
+- For geometry: draw the shapes with labeled sides/angles
+- For fractions: use pie charts or bar models
+- For algebra: use number lines or simple graphs
+- NOT every step needs a diagram — only where it genuinely helps visualize
 
 Return your response as JSON only (no markdown, no code fences):
 {
   "subject": "${subject}",
-  "problem": "description of what the problem is asking",
-  "given": ["list", "of", "givens"],
+  "problem": "description using $LaTeX$ for math expressions",
+  "given": ["list using $LaTeX$", "for math"],
   "steps": [
     {
       "step": 1,
-      "action": "what to do",
+      "action": "what to do (use $LaTeX$)",
       "why": "why we do this",
-      "result": "what we get",
+      "result": "Show: [[highlight]]$old$[[/highlight]] → [[green]]$new$[[/green]]",
+      "svg": "<svg viewBox='0 0 300 200' xmlns='http://www.w3.org/2000/svg'>...</svg> or null",
+      "svgCaption": "What this diagram shows (or null)",
       "comprehensionCheck": null
     },
     {
       "step": 2,
       "action": "what to do",
       "why": "why we do this",
-      "result": "what we get",
+      "result": "result with $LaTeX$ and color tags",
+      "svg": null,
+      "svgCaption": null,
       "comprehensionCheck": {
         "question": "What property allows us to...",
-        "options": ["Option A", "Option B", "Option C", "Option D"],
+        "options": ["Option A with $LaTeX$", "Option B", "Option C", "Option D"],
         "correctIndex": 0
       }
     }
   ],
-  "answer": "final answer",
+  "answer": "final answer using $LaTeX$",
   "concept": "key ${tutor.name} concept used"
 }
 
-IMPORTANT: Include comprehensionCheck on approximately every 2nd or 3rd step (not every step). Set comprehensionCheck to null for steps without a check. Make questions test understanding of the reasoning, not just recall. Always provide exactly 4 options with one correct answer.`;
+IMPORTANT: Include comprehensionCheck on approximately every 2nd or 3rd step (not every step). Set comprehensionCheck to null for steps without a check. Make questions test understanding of the reasoning, not just recall. Always provide exactly 4 options with one correct answer. Set svg to null for steps that don't need a visual. Include at least one SVG diagram somewhere in the solution if the problem involves shapes, graphs, or visual concepts.`;
 }
 
 async function detectSubject(imageBase64: string): Promise<string> {
