@@ -5,8 +5,6 @@ import {
   recordSolve,
   updateConceptScores,
   calculateWeaknesses,
-  incrementFreeSolves,
-  checkAccess,
   awardXP,
   updateStreak,
   checkAndAwardBadges,
@@ -66,11 +64,7 @@ export async function POST(req: NextRequest) {
     await updateStreak(userId);
     await checkAndAwardBadges(userId);
 
-    // Increment free solves if on trial
-    const access = await checkAccess(userId);
-    if (access.reason === "trial") {
-      await incrementFreeSolves(userId);
-    }
+    // Free solve counter is now incremented in /api/solve before the solve happens
 
     return NextResponse.json({ success: true, solve });
   } catch (error: any) {

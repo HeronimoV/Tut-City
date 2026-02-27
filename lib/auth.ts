@@ -16,14 +16,24 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (credentials?.email && credentials?.password) {
-          return {
-            id: credentials.email,
-            email: credentials.email,
-            name: credentials.email.split("@")[0],
-          };
-        }
-        return null;
+        if (!credentials?.email || !credentials?.password) return null;
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(credentials.email)) return null;
+
+        // Require password minimum 6 chars
+        if (credentials.password.length < 6) return null;
+
+        // Block obviously fake emails
+        const domain = credentials.email.split("@")[1];
+        if (!domain || domain.length < 3) return null;
+
+        return {
+          id: credentials.email,
+          email: credentials.email,
+          name: credentials.email.split("@")[0],
+        };
       },
     }),
   ],
