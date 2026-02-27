@@ -2,6 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { getProfile, createProfile } from "@/lib/db";
+import { isEmailVerified, isDisposableEmail } from "@/lib/email-verify";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -18,21 +19,30 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
+        const email = credentials.email.toLowerCase().trim();
+
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(credentials.email)) return null;
+        if (!emailRegex.test(email)) return null;
 
         // Require password minimum 6 chars
         if (credentials.password.length < 6) return null;
 
-        // Block obviously fake emails
-        const domain = credentials.email.split("@")[1];
+        // Block disposable emails
+        if (isDisposableEmail(email)) return null;
+
+        // Block obviously fake domains
+        const domain = email.split("@")[1];
         if (!domain || domain.length < 3) return null;
 
+        // Require email verification
+        const verified = await isEmailVerified(email);
+        if (!verified) return null;
+
         return {
-          id: credentials.email,
-          email: credentials.email,
-          name: credentials.email.split("@")[0],
+          id: email,
+          email: email,
+          name: email.split("@")[0],
         };
       },
     }),

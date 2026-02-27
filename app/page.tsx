@@ -88,6 +88,8 @@ function LandingPageInner() {
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [verifyCode, setVerifyCode] = useState("");
+  const [verifyStep, setVerifyStep] = useState<"email" | "code" | "password">("email");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showFloatingCta, setShowFloatingCta] = useState(false);
@@ -124,13 +126,61 @@ function LandingPageInner() {
     document.getElementById("signup-section")?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
+  const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
+    try {
+      const res = await fetch("/api/verify/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to send code");
+      } else {
+        setVerifyStep("code");
+      }
+    } catch {
+      setError("Something went wrong. Try again!");
+    }
+    setLoading(false);
+  };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/verify/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code: verifyCode }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.valid) {
+        setError(data.error || "Invalid code. Try again!");
+      } else {
+        setVerifyStep("password");
+      }
+    } catch {
+      setError("Something went wrong. Try again!");
+    }
+    setLoading(false);
+  };
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+    setLoading(true);
     const result = await signIn("credentials", { email, password, redirect: false });
     setLoading(false);
-    if (result?.error) setError("Invalid email or password 😕");
+    if (result?.error) setError("Something went wrong. Try again! 😕");
     else if (result?.ok) router.push("/dashboard");
   };
 
@@ -297,39 +347,99 @@ function LandingPageInner() {
                 </button>
               </>
             ) : (
-              <form onSubmit={handleEmailSignIn} className="space-y-3 animate-slide-up">
-                <input
-                  type="email"
-                  placeholder="Your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full px-5 py-4 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/30 text-white placeholder-white/50 text-lg focus:outline-none focus:ring-2 focus:ring-white/50"
-                />
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="w-full px-5 py-4 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/30 text-white placeholder-white/50 text-lg focus:outline-none focus:ring-2 focus:ring-white/50"
-                />
-                {error && <p className="text-red-300 text-sm text-center">{error}</p>}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-white text-violet-600 font-bold text-lg py-4 rounded-2xl shadow-lg hover:shadow-xl hover-lift active:scale-[0.98] disabled:opacity-50"
-                >
-                  {loading ? "Signing in..." : "Let's go! 🚀"}
-                </button>
+              <div className="space-y-3 animate-slide-up">
+                {/* Step 1: Enter email */}
+                {verifyStep === "email" && (
+                  <form onSubmit={handleSendCode} className="space-y-3">
+                    <p className="text-white/70 text-sm text-center">Enter your email to get a verification code 📧</p>
+                    <input
+                      type="email"
+                      placeholder="Your real email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="w-full px-5 py-4 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/30 text-white placeholder-white/50 text-lg focus:outline-none focus:ring-2 focus:ring-white/50"
+                    />
+                    {error && <p className="text-red-300 text-sm text-center">{error}</p>}
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-white text-violet-600 font-bold text-lg py-4 rounded-2xl shadow-lg hover:shadow-xl hover-lift active:scale-[0.98] disabled:opacity-50"
+                    >
+                      {loading ? "Sending code..." : "Send Verification Code 📩"}
+                    </button>
+                  </form>
+                )}
+
+                {/* Step 2: Enter verification code */}
+                {verifyStep === "code" && (
+                  <form onSubmit={handleVerifyCode} className="space-y-3">
+                    <p className="text-white/70 text-sm text-center">We sent a 6-digit code to <strong className="text-white">{email}</strong></p>
+                    <input
+                      type="text"
+                      placeholder="Enter 6-digit code"
+                      value={verifyCode}
+                      onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      required
+                      maxLength={6}
+                      className="w-full px-5 py-4 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/30 text-white placeholder-white/50 text-2xl text-center tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-white/50"
+                    />
+                    {error && <p className="text-red-300 text-sm text-center">{error}</p>}
+                    <button
+                      type="submit"
+                      disabled={loading || verifyCode.length !== 6}
+                      className="w-full bg-white text-violet-600 font-bold text-lg py-4 rounded-2xl shadow-lg hover:shadow-xl hover-lift active:scale-[0.98] disabled:opacity-50"
+                    >
+                      {loading ? "Verifying..." : "Verify ✅"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setVerifyStep("email"); setError(""); setVerifyCode(""); }}
+                      className="w-full text-white/60 text-sm py-2 hover:text-white/80 transition-all"
+                    >
+                      Use a different email
+                    </button>
+                  </form>
+                )}
+
+                {/* Step 3: Set password */}
+                {verifyStep === "password" && (
+                  <form onSubmit={handleEmailSignIn} className="space-y-3">
+                    <p className="text-white/70 text-sm text-center">Email verified! ✅ Set a password to continue.</p>
+                    <input
+                      type="email"
+                      value={email}
+                      disabled
+                      className="w-full px-5 py-4 rounded-2xl bg-white/10 border border-white/20 text-white/60 text-lg"
+                    />
+                    <input
+                      type="password"
+                      placeholder="Create a password (6+ chars)"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      className="w-full px-5 py-4 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/30 text-white placeholder-white/50 text-lg focus:outline-none focus:ring-2 focus:ring-white/50"
+                    />
+                    {error && <p className="text-red-300 text-sm text-center">{error}</p>}
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-white text-violet-600 font-bold text-lg py-4 rounded-2xl shadow-lg hover:shadow-xl hover-lift active:scale-[0.98] disabled:opacity-50"
+                    >
+                      {loading ? "Signing in..." : "Let's go! 🚀"}
+                    </button>
+                  </form>
+                )}
+
                 <button
                   type="button"
-                  onClick={() => { setShowEmailForm(false); setError(""); }}
+                  onClick={() => { setShowEmailForm(false); setError(""); setVerifyStep("email"); setVerifyCode(""); }}
                   className="w-full text-white/60 text-sm py-2 hover:text-white/80 transition-all"
                 >
                   ← Back
                 </button>
-              </form>
+              </div>
             )}
             <p className="text-center text-white/50 text-xs mt-4">
               3 free solves • Then $39.99/mo • Cancel anytime
