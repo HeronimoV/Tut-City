@@ -232,54 +232,7 @@ function LandingPageInner() {
         </div>
       </ScrollSection>
 
-      {/* ===== SOCIAL PROOF ===== */}
-      <ScrollSection className="max-w-lg mx-auto px-6 py-12 text-center">
-        <p className="text-white/50 text-sm uppercase tracking-wider mb-6">Trusted by students across the country</p>
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div>
-            <AnimatedCounter target={2847} />
-            <p className="text-white/50 text-xs mt-1">Problems solved</p>
-          </div>
-          <div>
-            <AnimatedCounter target={94} suffix="%" />
-            <p className="text-white/50 text-xs mt-1">Avg understanding</p>
-          </div>
-          <div>
-            <AnimatedCounter target={312} />
-            <p className="text-white/50 text-xs mt-1">Happy students</p>
-          </div>
-        </div>
-      </ScrollSection>
-
-      {/* ===== TESTIMONIALS ===== */}
-      <ScrollSection className="max-w-lg mx-auto px-6 py-8">
-        <h2 className="text-2xl font-extrabold text-white text-center mb-6">What students say</h2>
-        <div className="space-y-3">
-          {[
-            { name: "Maya T.", grade: "8th Grade", quote: "I went from a C to a B+ in geometry in 3 weeks. The step-by-step really helps it click.", stars: 5 },
-            { name: "James K.", grade: "10th Grade", quote: "Way better than just copying answers. I actually understand what I'm doing on tests now.", stars: 5 },
-            { name: "Sarah P.", grade: "Parent", quote: "My daughter's confidence in math has completely turned around. Worth every penny.", stars: 5 },
-          ].map((t, i) => (
-            <div key={i} className="glass-card p-5 hover-lift">
-              <div className="flex items-center gap-1 mb-2">
-                {Array.from({ length: t.stars }).map((_, j) => (
-                  <span key={j} className="text-yellow-400 text-sm">⭐</span>
-                ))}
-              </div>
-              <p className="text-white/80 text-sm italic mb-3">&ldquo;{t.quote}&rdquo;</p>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white text-xs font-bold">
-                  {t.name[0]}
-                </div>
-                <div>
-                  <p className="text-white text-sm font-semibold">{t.name}</p>
-                  <p className="text-white/40 text-xs">{t.grade}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </ScrollSection>
+      {/* Testimonials section removed — will add real ones once we have actual user feedback */}
 
       {/* ===== SUBJECTS ===== */}
       <ScrollSection className="max-w-lg mx-auto px-6 py-12">
